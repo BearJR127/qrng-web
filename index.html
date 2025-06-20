@@ -423,7 +423,7 @@
             rngTs = rdt.toISOString().replace('T', ' ').split('.')[0];
             rngTsHash = await computeHash(rngTs);
           }
-          rows.push([ts, rngTs, e.username || '', e.mode, e.rng || '', e.userSymbol, ts, tsHash, e.actualSymbol, rngTs, rngTsHash, e.match, e.submitHash || '', e.rngHash || '']);
+          rows.push([ts, e.username || '', e.mode, e.rng || '', e.userSymbol, ts, tsHash, e.actualSymbol, rngTs, rngTsHash, e.match, e.submitHash || '', e.rngHash || '']);
         }
       }
       const labels = SYMBOLS;
@@ -441,8 +441,8 @@
         return {s,n,k,rate,pval,power,ci};
       });
       const exportUser = document.getElementById('username').value.trim() || 'unidentified';
-      let csv='username,'+exportUser+'\n'+
-              'submitTimestamp,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
+        let csv='username,'+exportUser+'\n'+
+                'submitTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
               rows.map(r=>r.join(',')).join('\n')+
               '\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+
               stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
