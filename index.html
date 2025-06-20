@@ -227,7 +227,8 @@
         `Your focus: <b>${guess}</b><br>` +
         `Actual: <b>${actual}</b><br>` +
         `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode:'focus', userSymbol: guess, actualSymbol: actual, match, username })
+      const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
+      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode:'focus', rng, userSymbol: guess, actualSymbol: actual, match, username })
         .catch(e => console.error(e));
     }
 
@@ -270,9 +271,10 @@
             document.getElementById("result").innerText = "Insufficient random bits — try again.";
             return;
           }
+          const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
           const match = (actual === guess);
           results.push({ guess, actual, match });
-          addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, userSymbol: guess, actualSymbol: actual, match, username })
+          addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, rng, userSymbol: guess, actualSymbol: actual, match, username })
             .catch(e => console.error(e));
         }
         let summary = '';
@@ -306,12 +308,13 @@
           return;
         }
       }
+      const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
       const match = (actual === guess);
       document.getElementById("result").innerHTML =
         `Your ${mode==='focus'?'focus':'guess'}: <b>${guess}</b><br>
          Actual: <b>${actual}</b><br>
          <span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, userSymbol: guess, actualSymbol: actual, match, username })
+      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, rng, userSymbol: guess, actualSymbol: actual, match, username })
         .catch(e => console.error(e));
     }
 
@@ -330,7 +333,7 @@
             const dt = e.timestamp.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
             ts = dt.toISOString().replace('T', ' ').split('.')[0];
           }
-          rows.push([ts, e.username || '', e.mode, e.userSymbol, e.actualSymbol, e.match]);
+          rows.push([ts, e.username || '', e.mode, e.rng || '', e.userSymbol, e.actualSymbol, e.match]);
         }
       });
       const labels = SYMBOLS;
@@ -347,7 +350,7 @@
         const ci = n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
         return {s,n,k,rate,pval,power,ci};
       });
-      let csv='timestamp,username,mode,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
+      let csv='timestamp,username,mode,RNG,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
       const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
       a.href=url; a.download=`qrng_${modeFilter||'all'}.csv`; a.click(); URL.revokeObjectURL(url);
     }
