@@ -372,24 +372,26 @@
       const modeFilter = prompt("Filter (focus, guesser, intuition) or leave blank:").toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
-      snap.forEach(d => {
+      for (const d of snap.docs) {
         const e = d.data();
-        if (modeFilter && e.mode !== modeFilter) return;
+        if (modeFilter && e.mode !== modeFilter) continue;
         if (e.userSymbol in total) {
           total[e.userSymbol]++;
           if (e.match) data[e.userSymbol]++;
-          let ts = '', rngTs = '';
+          let ts = '', rngTs = '', tsHash = '', rngTsHash = '';
           if (e.timestamp) {
             const dt = e.timestamp.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
             ts = dt.toISOString().replace('T', ' ').split('.')[0];
+            tsHash = await computeHash(ts);
           }
           if (e.rngTimestamp) {
             const rdt = e.rngTimestamp.toDate ? e.rngTimestamp.toDate() : new Date(e.rngTimestamp);
             rngTs = rdt.toISOString().replace('T', ' ').split('.')[0];
+            rngTsHash = await computeHash(rngTs);
           }
-          rows.push([ts, rngTs, e.username || '', e.mode, e.rng || '', e.userSymbol, e.actualSymbol, e.match, e.submitHash || '', e.rngHash || '']);
+          rows.push([ts, rngTs, e.username || '', e.mode, e.rng || '', e.userSymbol, ts, tsHash, e.actualSymbol, rngTs, rngTsHash, e.match, e.submitHash || '', e.rngHash || '']);
         }
-      });
+      }
       const labels = SYMBOLS;
       const matches = labels.map(s=>data[s]);
       const attempts = labels.map(s=>total[s]);
@@ -406,7 +408,7 @@
       });
       const exportUser = document.getElementById('username').value.trim() || 'unidentified';
       let csv='username,'+exportUser+'\n'+
-              'submitTimestamp,rngTimestamp,username,mode,RNG,userSymbol,actualSymbol,match,submitHash,rngHash\n'+
+              'submitTimestamp,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
               rows.map(r=>r.join(',')).join('\n')+
               '\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+
               stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
