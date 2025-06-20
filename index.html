@@ -42,6 +42,14 @@
     </select>
   </div>
 
+  <div>
+    <label>RNG:</label>
+    <select id="rng">
+      <option value="camera" selected>Camera</option>
+      <option value="event">Random Event</option>
+    </select>
+  </div>
+
   <div id="single-choice-container">
     <label>Select a Symbol:</label>
     <select id="single-choice">
@@ -196,6 +204,20 @@
       return SYMBOLS[parseInt(vn.slice(0,2).join(""), 2)];
     }
 
+    function getSymbolFromEvent() {
+      const arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      return SYMBOLS[arr[0] % SYMBOLS.length];
+    }
+
+    function getSymbol() {
+      const rngMode = document.getElementById("rng").value;
+      if (rngMode === 'event') {
+        return getSymbolFromEvent();
+      }
+      return getSymbolFromWebcam();
+    }
+
     async function runTrial() {
       const mode = document.getElementById("mode").value;
       const username = document.getElementById("username").value.trim() || 'unidentified';
@@ -207,7 +229,7 @@
         }
         const results = [];
         for (const guess of guesses) {
-          const actual = getSymbolFromWebcam();
+          const actual = getSymbol();
           if (!actual) {
             document.getElementById("result").innerText = "Insufficient random bits — try again.";
             return;
@@ -235,7 +257,7 @@
 
       let guess, actual;
       if (mode === 'guesser') {
-        actual = getSymbolFromWebcam();
+        actual = getSymbol();
         if (!actual) {
           document.getElementById("result").innerText = "Insufficient random bits — try again.";
           return;
@@ -243,7 +265,7 @@
         guess = document.getElementById("single-choice").value;
       } else {
         guess = document.getElementById("single-choice").value;
-        actual = getSymbolFromWebcam();
+        actual = getSymbol();
         if (!actual) {
           document.getElementById("result").innerText = "Insufficient random bits — try again.";
           return;
