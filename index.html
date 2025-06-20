@@ -10,8 +10,8 @@
     #result { font-size: 20px; margin-top: 20px; }
     .match { color: lime; font-weight: bold; }
     .no-match { color: red; font-weight: bold; }
-    .premonition-choice { margin: 5px; }
-    #premonition-inputs { margin-top: 10px; }
+    .intuition-choice { margin: 5px; }
+    #intuition-inputs { margin-top: 10px; }
     canvas { background: #222; border: 1px solid #444; margin-top: 20px; }
     #chart { background: #fff; width: 320px; height: 240px; }
     #live-container { position: relative; display: flex; justify-content: center; gap: 20px; }
@@ -37,7 +37,7 @@
     <select id="mode">
       <option value="focus">Focus</option>
       <option value="guesser">Guesser</option>
-      <option value="premonition">Premonition</option>
+      <option value="intuition">Intuition</option>
     </select>
   </div>
 
@@ -60,33 +60,33 @@
   </div>
   </div>
 
-  <div id="premonition-inputs" style="display:none;">
+  <div id="intuition-inputs" style="display:none;">
     <label>Select 5 Symbols:</label><br>
-    <select class="premonition-choice" id="user-choice-1">
+    <select class="intuition-choice" id="user-choice-1">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
       <option value="Yellow">Yellow</option>
     </select>
-    <select class="premonition-choice" id="user-choice-2">
+    <select class="intuition-choice" id="user-choice-2">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
       <option value="Yellow">Yellow</option>
     </select>
-    <select class="premonition-choice" id="user-choice-3">
+    <select class="intuition-choice" id="user-choice-3">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
       <option value="Yellow">Yellow</option>
     </select>
-    <select class="premonition-choice" id="user-choice-4">
+    <select class="intuition-choice" id="user-choice-4">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
       <option value="Yellow">Yellow</option>
     </select>
-    <select class="premonition-choice" id="user-choice-5">
+    <select class="intuition-choice" id="user-choice-5">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
@@ -126,7 +126,7 @@
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    let premonitionStats = {round:0,totalMatches:0,totalTrials:0};
+    let intuitionStats = {round:0,totalMatches:0,totalTrials:0};
     let chartInstance = null;
     let focusRunning = false;
 
@@ -163,8 +163,8 @@
     }
     function updateUIForMode() {
       const m = document.getElementById("mode").value;
-      document.getElementById("single-choice-container").style.display = m === "premonition" ? "none" : "block";
-      document.getElementById("premonition-inputs").style.display = m === "premonition" ? "block" : "none";
+      document.getElementById("single-choice-container").style.display = m === "intuition" ? "none" : "block";
+      document.getElementById("intuition-inputs").style.display = m === "intuition" ? "block" : "none";
     }
     document.getElementById("mode").addEventListener("change", updateUIForMode);
     updateUIForMode();
@@ -263,7 +263,7 @@
         }
         return;
       }
-      if (mode === 'premonition') {
+      if (mode === 'intuition') {
         const guesses = [];
         for (let i = 1; i <= 5; i++) {
           guesses.push(document.getElementById(`user-choice-${i}`).value);
@@ -287,12 +287,12 @@
           if (r.match) matchCount++;
           summary += `Guess ${i+1}: <b>${r.guess}</b> | Actual: <b>${r.actual}</b> - <span class='${r.match?'match':'no-match'}'>${r.match?'✔':'✘'}</span><br>`;
         });
-        premonitionStats.round++;
-        premonitionStats.totalMatches += matchCount;
-        premonitionStats.totalTrials += 5;
-        summary += `<b>Round ${premonitionStats.round}: ${matchCount}/5 correct</b><br>`;
+        intuitionStats.round++;
+        intuitionStats.totalMatches += matchCount;
+        intuitionStats.totalTrials += 5;
+        summary += `<b>Round ${intuitionStats.round}: ${matchCount}/5 correct</b><br>`;
         document.getElementById("result").innerHTML = summary;
-        document.querySelectorAll('.premonition-choice').forEach(sel => sel.selectedIndex = 0);
+        document.querySelectorAll('.intuition-choice').forEach(sel => sel.selectedIndex = 0);
         return;
       }
 
@@ -323,7 +323,7 @@
     }
 
     async function exportCSV() {
-      const modeFilter = prompt("Filter (focus, guesser, premonition) or leave blank:").toLowerCase();
+      const modeFilter = prompt("Filter (focus, guesser, intuition) or leave blank:").toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
       snap.forEach(d => {
