@@ -10,6 +10,8 @@
     #result { font-size: 20px; margin-top: 20px; }
     .match { color: lime; font-weight: bold; }
     .no-match { color: red; font-weight: bold; }
+    .premonition-choice { margin: 5px; }
+    #premonition-inputs { margin-top: 10px; }
     canvas { background: #222; border: 1px solid #444; margin-top: 20px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -27,9 +29,43 @@
     </select>
   </div>
 
-  <div>
+  <div id="single-choice-container">
     <label>Select a Symbol:</label>
-    <select id="user-choice">
+    <select id="single-choice">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select>
+  </div>
+
+  <div id="premonition-inputs" style="display:none;">
+    <label>Select 5 Symbols:</label><br>
+    <select class="premonition-choice" id="user-choice-1">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select>
+    <select class="premonition-choice" id="user-choice-2">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select>
+    <select class="premonition-choice" id="user-choice-3">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select>
+    <select class="premonition-choice" id="user-choice-4">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select>
+    <select class="premonition-choice" id="user-choice-5">
       <option value="Red">Red</option>
       <option value="Blue">Blue</option>
       <option value="Green">Green</option>
@@ -67,8 +103,15 @@
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    let premonitionQueue = [];
+    let premonitionStats = {round:0,totalMatches:0,totalTrials:0};
     let chartInstance = null;
+    function updateUIForMode() {
+      const m = document.getElementById("mode").value;
+      document.getElementById("single-choice-container").style.display = m === "premonition" ? "none" : "block";
+      document.getElementById("premonition-inputs").style.display = m === "premonition" ? "block" : "none";
+    }
+    document.getElementById("mode").addEventListener("change", updateUIForMode);
+    updateUIForMode();
 
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => { video.srcObject = stream; })
@@ -107,19 +150,45 @@
 
     async function runTrial() {
       const mode = document.getElementById("mode").value;
-      let guess = document.getElementById("user-choice").value;
+      if (mode === 'premonition') {
+        const guesses = [];
+        for (let i = 1; i <= 5; i++) {
+          guesses.push(document.getElementById(`user-choice-${i}`).value);
+        }
+        const results = [];
+        for (const guess of guesses) {
+          const actual = getSymbolFromWebcam();
+          if (!actual) {
+            document.getElementById("result").innerText = "Insufficient random bits — try again.";
+            return;
+          }
+          const match = (actual === guess);
+          results.push({ guess, actual, match });
+          try {
+            await addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match });
+          } catch(e) { console.error(e); }
+        }
+        let summary = '';
+        let matchCount = 0;
+        results.forEach((r,i) => {
+          if (r.match) matchCount++;
+          summary += `Guess ${i+1}: <b>${r.guess}</b> | Actual: <b>${r.actual}</b> - <span class='${r.match?'match':'no-match'}'>${r.match?'✔':'✘'}</span><br>`;
+        });
+        premonitionStats.round++;
+        premonitionStats.totalMatches += matchCount;
+        premonitionStats.totalTrials += 5;
+        summary += `<b>Round ${premonitionStats.round}: ${matchCount}/5 correct</b><br>`;
+        summary += `<b>Cumulative: ${premonitionStats.totalMatches}/${premonitionStats.totalTrials} correct</b>`;
+        document.getElementById("result").innerHTML = summary;
+        document.querySelectorAll('.premonition-choice').forEach(sel => sel.selectedIndex = 0);
+        return;
+      }
+
+      const guess = document.getElementById("single-choice").value;
       const actual = getSymbolFromWebcam();
       if (!actual) {
         document.getElementById("result").innerText = "Insufficient random bits — try again.";
         return;
-      }
-      if (mode === 'premonition') {
-        premonitionQueue.push(guess);
-        if (premonitionQueue.length < 2) {
-          document.getElementById("result").innerText = "Queued guess. Run again to resolve.";
-          return;
-        }
-        guess = premonitionQueue.shift();
       }
       const match = (actual === guess);
       document.getElementById("result").innerHTML =
