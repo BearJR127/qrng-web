@@ -119,6 +119,7 @@
 
   <button onclick="runTrial()" id="trial-button">Start Trial</button>
   <button onclick="exportCSV()">Export CSV</button>
+  <button onclick="resetPage()">Reset</button>
   <button id="about-button">About</button>
 
   <div id="result"></div>
@@ -471,9 +472,16 @@
       a.href=url; a.download=`qrng_${ts}.csv`; a.click(); URL.revokeObjectURL(url);
     }
 
+    function resetPage() {
+      if (confirm('Are you sure you want to refresh and reset all data?')) {
+        location.reload();
+      }
+    }
+
     // Expose functions to global scope for onclick handlers
     window.runTrial = runTrial;
     window.exportCSV = exportCSV;
+    window.resetPage = resetPage;
     window.submitIntuitionChoice = submitIntuitionChoice;
   </script>
   <div id="about-modal">
