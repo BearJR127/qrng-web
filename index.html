@@ -26,6 +26,18 @@
     #dashboard-stats { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; font-size: 14px; line-height: 1.2; text-align: right; }
     #options-row { display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
     #options-row > div { display: flex; align-items: center; gap: 5px; }
+    #about-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #444;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -378,6 +390,19 @@
     // Expose functions to global scope for onclick handlers
     window.runTrial = runTrial;
     window.exportCSV = exportCSV;
+  </script>
+  <button id="about-button">About</button>
+  <div id="about-modal">
+    <p>Welcome to Color Picking Guessing Game</p>
+    <button id="close-about">Close</button>
+  </div>
+  <script>
+    document.getElementById('about-button').addEventListener('click', () => {
+      document.getElementById('about-modal').style.display = 'block';
+    });
+    document.getElementById('close-about').addEventListener('click', () => {
+      document.getElementById('about-modal').style.display = 'none';
+    });
   </script>
   <hr>
   <p><em>Copyright 2025 BearJR127. All right reserved, any commercial usage or modification of this software requires expressed permission.</em></p>
