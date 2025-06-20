@@ -152,6 +152,8 @@
     let currentIntuitionIndex = 1;
     let chartInstance = null;
     let focusRunning = false;
+    let nextActual = null;
+    let nextRngTimestamp = null;
 
     function updateChart(snapshot) {
       const data = {Red:0,Blue:0,Green:0,Yellow:0},
@@ -191,6 +193,9 @@
       document.getElementById("intuition-submit").style.display = m === "intuition" ? "inline-block" : "none";
       if (m === 'intuition') {
         resetIntuitionChoices();
+      }
+      if (m === 'guesser') {
+        prepareNextRng();
       }
     }
     document.getElementById("mode").addEventListener("change", updateUIForMode);
@@ -271,6 +276,11 @@
         return getSymbolFromEvent();
       }
       return getSymbolFromWebcam();
+    }
+
+    function prepareNextRng() {
+      nextActual = getSymbol();
+      nextRngTimestamp = new Date();
     }
 
     async function computeHash(obj) {
@@ -371,10 +381,11 @@
 
       let guess, actual, rngTimestamp;
       if (mode === 'guesser') {
-        actual = getSymbol();
-        rngTimestamp = new Date();
+        actual = nextActual;
+        rngTimestamp = nextRngTimestamp;
         if (!actual) {
           document.getElementById("result").innerText = "Insufficient random bits — try again.";
+          prepareNextRng();
           return;
         }
         guess = document.getElementById("single-choice").value;
@@ -400,6 +411,9 @@
       record.hash = hash;
       addDoc(collection(db, 'qrng_trials'), record)
         .catch(e => console.error(e));
+      if (mode === 'guesser') {
+        prepareNextRng();
+      }
     }
 
     async function exportCSV() {
