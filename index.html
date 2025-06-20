@@ -113,6 +113,7 @@
       <option value="Yellow">Yellow</option>
     </select>
   </div>
+  <button id="intuition-submit" onclick="submitIntuitionChoice()" style="display:none;">Submit Choice</button>
 
   <button onclick="runTrial()" id="trial-button">Start Trial</button>
   <button onclick="exportCSV()">Export CSV</button>
@@ -147,6 +148,8 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let intuitionStats = {round:0,totalMatches:0,totalTrials:0};
+    let intuitionGuesses = [];
+    let currentIntuitionIndex = 1;
     let chartInstance = null;
     let focusRunning = false;
 
@@ -185,10 +188,41 @@
       const m = document.getElementById("mode").value;
       document.getElementById("single-choice-container").style.display = m === "intuition" ? "none" : "block";
       document.getElementById("intuition-inputs").style.display = m === "intuition" ? "block" : "none";
+      document.getElementById("intuition-submit").style.display = m === "intuition" ? "inline-block" : "none";
+      if (m === 'intuition') {
+        resetIntuitionChoices();
+      }
     }
     document.getElementById("mode").addEventListener("change", updateUIForMode);
     updateUIForMode();
     initLiveDashboard();
+
+    function resetIntuitionChoices(){
+      intuitionGuesses = [];
+      currentIntuitionIndex = 1;
+      for(let i=1;i<=5;i++){
+        const sel=document.getElementById(`user-choice-${i}`);
+        sel.disabled = (i !== 1);
+        sel.selectedIndex = 0;
+      }
+      document.getElementById('intuition-submit').disabled = false;
+    }
+
+    async function submitIntuitionChoice(){
+      const sel = document.getElementById(`user-choice-${currentIntuitionIndex}`);
+      const guess = sel.value;
+      const timestamp = new Date();
+      const username = document.getElementById('username').value.trim() || 'unidentified';
+      const submitHash = await computeHash({timestamp: timestamp.toISOString(), mode:'intuition', userSymbol: guess, username});
+      intuitionGuesses.push({guess, timestamp, submitHash});
+      sel.disabled = true;
+      currentIntuitionIndex++;
+      if(currentIntuitionIndex <= 5){
+        document.getElementById(`user-choice-${currentIntuitionIndex}`).disabled = false;
+      } else {
+        document.getElementById('intuition-submit').disabled = true;
+      }
+    }
 
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => { video.srcObject = stream; })
@@ -297,12 +331,12 @@
         return;
       }
       if (mode === 'intuition') {
-        const guesses = [];
-        for (let i = 1; i <= 5; i++) {
-          guesses.push(document.getElementById(`user-choice-${i}`).value);
+        if (intuitionGuesses.length < 5) {
+          document.getElementById("result").innerText = "Please submit all 5 choices first.";
+          return;
         }
         const results = [];
-        for (const guess of guesses) {
+        for (const g of intuitionGuesses) {
           const actual = getSymbol();
           const rngTimestamp = new Date();
           if (!actual) {
@@ -310,11 +344,11 @@
             return;
           }
           const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
-          const match = (actual === guess);
-          results.push({ guess, actual, match });
-          const submitHash = await computeHash({ timestamp: submitTimestamp.toISOString(), mode, userSymbol: guess, username });
+          const match = (actual === g.guess);
+          results.push({ guess: g.guess, actual, match });
+          const record = { timestamp: g.timestamp, submitTimestamp: g.timestamp, rngTimestamp, mode, rng, userSymbol: g.guess, actualSymbol: actual, match, username, submitHash: g.submitHash };
           const rngHash = await computeHash({ timestamp: rngTimestamp.toISOString(), mode, rng, actualSymbol: actual });
-          const record = { timestamp: submitTimestamp, submitTimestamp, rngTimestamp, mode, rng, userSymbol: guess, actualSymbol: actual, match, username, submitHash, rngHash };
+          record.rngHash = rngHash;
           const hash = await computeHash({ ...record, timestamp: record.submitTimestamp.toISOString(), rngTimestamp: record.rngTimestamp.toISOString() });
           record.hash = hash;
           addDoc(collection(db, 'qrng_trials'), record)
@@ -331,7 +365,7 @@
         intuitionStats.totalTrials += 5;
         summary += `<b>Round ${intuitionStats.round}: ${matchCount}/5 correct</b><br>`;
         document.getElementById("result").innerHTML = summary;
-        document.querySelectorAll('.intuition-choice').forEach(sel => sel.selectedIndex = 0);
+        resetIntuitionChoices();
         return;
       }
 
@@ -422,6 +456,7 @@
     // Expose functions to global scope for onclick handlers
     window.runTrial = runTrial;
     window.exportCSV = exportCSV;
+    window.submitIntuitionChoice = submitIntuitionChoice;
   </script>
   <button id="about-button">About</button>
   <div id="about-modal">
