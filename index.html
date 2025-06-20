@@ -14,7 +14,8 @@
     #premonition-inputs { margin-top: 10px; }
     canvas { background: #222; border: 1px solid #444; margin-top: 20px; }
     #chart { background: #fff; }
-    #live-container { display: flex; justify-content: center; gap: 20px; }
+    #live-container { position: relative; display: flex; justify-content: center; gap: 20px; }
+    #dashboard-stats { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; font-size: 14px; line-height: 1.2; text-align: right; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -90,6 +91,7 @@
 
   <div id="result"></div>
   <div id="live-container">
+    <div id="dashboard-stats"></div>
     <canvas id="chart" width="320" height="160"></canvas>
     <video id="video" width="320" height="240" autoplay muted></video>
   </div>
@@ -129,16 +131,22 @@
           if(e.match) data[e.userSymbol]++;
         }
       });
-      const labels = SYMBOLS,
+      const labels = SYMBOLS.slice(),
             matches = labels.map(s=>data[s]),
             attempts = labels.map(s=>total[s]);
+      const allMatches = matches.reduce((a,b)=>a+b,0);
+      const allAttempts = attempts.reduce((a,b)=>a+b,0);
+      labels.push('All');
+      const datasetData = SYMBOLS.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0);
+      datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
       if(chartInstance) chartInstance.destroy();
       const ctxc = document.getElementById('chart').getContext('2d');
       chartInstance = new Chart(ctxc, {
         type:'bar',
-        data:{ labels, datasets:[{ label:'Match %', data:labels.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0), backgroundColor:['red','blue','green','yellow'] }]},
+        data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','gray'] }]},
         options:{ scales:{ y:{ beginAtZero:true, max:100 } } }
       });
+      document.getElementById('dashboard-stats').innerText = `Matched: ${allMatches}\nTrials: ${allAttempts}`;
     }
 
     function initLiveDashboard(){
