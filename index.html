@@ -420,7 +420,8 @@
     }
 
     async function exportCSV() {
-      const modeFilter = prompt("Filter (focus, guesser, intuition) or leave blank:").toLowerCase();
+      const promptResult = prompt("Filter (focus, guesser, intuition) or leave blank:");
+      const modeFilter = (promptResult === null ? '' : promptResult).toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
       for (const d of snap.docs) {
