@@ -183,11 +183,21 @@
         return;
       }
 
-      const guess = document.getElementById("single-choice").value;
-      const actual = getSymbolFromWebcam();
-      if (!actual) {
-        document.getElementById("result").innerText = "Insufficient random bits — try again.";
-        return;
+      let guess, actual;
+      if (mode === 'guesser') {
+        actual = getSymbolFromWebcam();
+        if (!actual) {
+          document.getElementById("result").innerText = "Insufficient random bits — try again.";
+          return;
+        }
+        guess = document.getElementById("single-choice").value;
+      } else {
+        guess = document.getElementById("single-choice").value;
+        actual = getSymbolFromWebcam();
+        if (!actual) {
+          document.getElementById("result").innerText = "Insufficient random bits — try again.";
+          return;
+        }
       }
       const match = (actual === guess);
       document.getElementById("result").innerHTML =
