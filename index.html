@@ -164,9 +164,8 @@
           }
           const match = (actual === guess);
           results.push({ guess, actual, match });
-          try {
-            await addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match });
-          } catch(e) { console.error(e); }
+          addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match })
+            .catch(e => console.error(e));
         }
         let summary = '';
         let matchCount = 0;
@@ -195,9 +194,8 @@
         `Your ${mode==='focus'?'focus':'guess'}: <b>${guess}</b><br>
          Actual: <b>${actual}</b><br>
          <span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      try {
-        await addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match });
-      } catch(e) { console.error(e); }
+      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match })
+        .catch(e => console.error(e));
     }
 
     async function loadChart() {
