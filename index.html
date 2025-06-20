@@ -354,7 +354,12 @@
         const ci = n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
         return {s,n,k,rate,pval,power,ci};
       });
-      let csv='timestamp,username,mode,RNG,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
+      const exportUser = document.getElementById('username').value.trim() || 'unidentified';
+      let csv='username,'+exportUser+'\n'+
+              'timestamp,username,mode,RNG,userSymbol,actualSymbol,match\n'+
+              rows.map(r=>r.join(',')).join('\n')+
+              '\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+
+              stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
       const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
       a.href=url; a.download=`qrng_${modeFilter||'all'}.csv`; a.click(); URL.revokeObjectURL(url);
     }
