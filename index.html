@@ -249,7 +249,6 @@
         premonitionStats.totalMatches += matchCount;
         premonitionStats.totalTrials += 5;
         summary += `<b>Round ${premonitionStats.round}: ${matchCount}/5 correct</b><br>`;
-        summary += `<b>Cumulative: ${premonitionStats.totalMatches}/${premonitionStats.totalTrials} correct</b>`;
         document.getElementById("result").innerHTML = summary;
         document.querySelectorAll('.premonition-choice').forEach(sel => sel.selectedIndex = 0);
         return;
