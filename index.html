@@ -74,7 +74,7 @@
   </div>
 
   <button onclick="runTrial()">Start Trial</button>
-  <button onclick="loadChart()">📊 Load Dashboard & Export CSV</button>
+  <button onclick="exportCSV()">Export CSV</button>
 
   <div id="result"></div>
   <canvas id="chart" width="600" height="300"></canvas>
@@ -84,7 +84,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     // TODO: fill in your Firebase config
     const firebaseConfig = {
@@ -105,6 +105,32 @@
     const ctx = canvas.getContext("2d");
     let premonitionStats = {round:0,totalMatches:0,totalTrials:0};
     let chartInstance = null;
+
+    function updateChart(snapshot) {
+      const data = {Red:0,Blue:0,Green:0,Yellow:0},
+            total = {Red:0,Blue:0,Green:0,Yellow:0};
+      snapshot.forEach(d => {
+        const e = d.data();
+        if(e.userSymbol in total){
+          total[e.userSymbol]++;
+          if(e.match) data[e.userSymbol]++;
+        }
+      });
+      const labels = SYMBOLS,
+            matches = labels.map(s=>data[s]),
+            attempts = labels.map(s=>total[s]);
+      if(chartInstance) chartInstance.destroy();
+      const ctxc = document.getElementById('chart').getContext('2d');
+      chartInstance = new Chart(ctxc, {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Match %', data:labels.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0), backgroundColor:['red','blue','green','yellow'] }]},
+        options:{ scales:{ y:{ beginAtZero:true, max:100 } } }
+      });
+    }
+
+    function initLiveDashboard(){
+      onSnapshot(collection(db, 'qrng_trials'), snap => updateChart(snap));
+    }
     function updateUIForMode() {
       const m = document.getElementById("mode").value;
       document.getElementById("single-choice-container").style.display = m === "premonition" ? "none" : "block";
@@ -112,6 +138,7 @@
     }
     document.getElementById("mode").addEventListener("change", updateUIForMode);
     updateUIForMode();
+    initLiveDashboard();
 
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => { video.srcObject = stream; })
@@ -208,7 +235,7 @@
         .catch(e => console.error(e));
     }
 
-    async function loadChart() {
+    async function exportCSV() {
       const modeFilter = prompt("Filter (focus, guesser, premonition) or leave blank:").toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
@@ -227,9 +254,6 @@
         const ci = n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
         return {s,n,k,rate,pval,power,ci};
       });
-      if(chartInstance) chartInstance.destroy();
-      const ctxc = document.getElementById('chart').getContext('2d');
-      chartInstance = new Chart(ctxc, { type:'bar', data:{ labels, datasets:[{ label:'Match %', data:labels.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0), backgroundColor:['red','blue','green','yellow'] }]}, options:{ scales:{ y:{ beginAtZero:true, max:100 } } } });
       let csv='timestamp,mode,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
       const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
       a.href=url; a.download=`qrng_${modeFilter||'all'}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -237,7 +261,7 @@
 
     // Expose functions to global scope for onclick handlers
     window.runTrial = runTrial;
-    window.loadChart = loadChart;
+    window.exportCSV = exportCSV;
   </script>
 </body>
 </html>
