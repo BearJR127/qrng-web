@@ -16,6 +16,8 @@
     #chart { background: #fff; width: 320px; height: 240px; }
     #live-container { position: relative; display: flex; justify-content: center; gap: 20px; }
     #dashboard-stats { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; font-size: 14px; line-height: 1.2; text-align: right; }
+    #options-row { display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
+    #options-row > div { display: flex; align-items: center; gap: 5px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -29,6 +31,7 @@
   </div>
 
 
+  <div id="options-row">
   <div>
     <label>Select Mode:</label>
     <select id="mode">
@@ -54,6 +57,7 @@
       <option value="Green">Green</option>
       <option value="Yellow">Yellow</option>
     </select>
+  </div>
   </div>
 
   <div id="premonition-inputs" style="display:none;">
