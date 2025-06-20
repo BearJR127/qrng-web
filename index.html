@@ -28,10 +28,6 @@
     <input type="text" id="username" value="unidentified" />
   </div>
 
-  <div>
-    <label>Email:</label>
-    <input type="email" id="email" value="unidentified" />
-  </div>
 
   <div>
     <label>Select Mode:</label>
@@ -219,7 +215,7 @@
       return getSymbolFromWebcam();
     }
 
-    async function singleFocusTrial(username, email) {
+    async function singleFocusTrial(username) {
       const guess = document.getElementById("single-choice").value;
       const actual = getSymbol();
       if (!actual) {
@@ -231,16 +227,16 @@
         `Your focus: <b>${guess}</b><br>` +
         `Actual: <b>${actual}</b><br>` +
         `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode:'focus', userSymbol: guess, actualSymbol: actual, match, username, email })
+      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode:'focus', userSymbol: guess, actualSymbol: actual, match, username })
         .catch(e => console.error(e));
     }
 
-    function startFocusLoop(username, email) {
+    function startFocusLoop(username) {
       focusRunning = true;
       document.getElementById('trial-button').innerText = 'Stop Trial';
       const loop = async () => {
         if (!focusRunning) return;
-        await singleFocusTrial(username, email);
+        await singleFocusTrial(username);
         setTimeout(loop, 200);
       };
       loop();
@@ -254,12 +250,11 @@
     async function runTrial() {
       const mode = document.getElementById("mode").value;
       const username = document.getElementById("username").value.trim() || 'unidentified';
-      const email = document.getElementById("email").value.trim() || 'unidentified';
       if (mode === 'focus') {
         if (focusRunning) {
           stopFocusLoop();
         } else {
-          startFocusLoop(username, email);
+          startFocusLoop(username);
         }
         return;
       }
@@ -277,7 +272,7 @@
           }
           const match = (actual === guess);
           results.push({ guess, actual, match });
-          addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
+          addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username })
             .catch(e => console.error(e));
         }
         let summary = '';
@@ -316,7 +311,7 @@
         `Your ${mode==='focus'?'focus':'guess'}: <b>${guess}</b><br>
          Actual: <b>${actual}</b><br>
          <span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
+      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username })
         .catch(e => console.error(e));
     }
 
@@ -324,7 +319,7 @@
       const modeFilter = prompt("Filter (focus, guesser, premonition) or leave blank:").toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
-      snap.forEach(d => { const e = d.data(); if(modeFilter && e.mode!==modeFilter) return; if(e.userSymbol in total){ total[e.userSymbol]++; if(e.match) data[e.userSymbol]++; rows.push([e.timestamp?.toDate().toISOString()||'', e.username||'', e.email||'', e.mode, e.userSymbol, e.actualSymbol, e.match]); }});
+      snap.forEach(d => { const e = d.data(); if(modeFilter && e.mode!==modeFilter) return; if(e.userSymbol in total){ total[e.userSymbol]++; if(e.match) data[e.userSymbol]++; rows.push([e.timestamp?.toDate().toISOString()||'', e.username||'', e.mode, e.userSymbol, e.actualSymbol, e.match]); }});
       const labels = SYMBOLS;
       const matches = labels.map(s=>data[s]);
       const attempts = labels.map(s=>total[s]);
@@ -339,7 +334,7 @@
         const ci = n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
         return {s,n,k,rate,pval,power,ci};
       });
-      let csv='timestamp,username,email,mode,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
+      let csv='timestamp,username,mode,userSymbol,actualSymbol,match\n'+rows.map(r=>r.join(',')).join('\n')+'\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
       const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
       a.href=url; a.download=`qrng_${modeFilter||'all'}.csv`; a.click(); URL.revokeObjectURL(url);
     }
