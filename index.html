@@ -107,7 +107,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     // TODO: fill in your Firebase config
     const firebaseConfig = {
@@ -231,7 +231,7 @@
         `Your focus: <b>${guess}</b><br>` +
         `Actual: <b>${actual}</b><br>` +
         `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode:'focus', userSymbol: guess, actualSymbol: actual, match, username, email })
+      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode:'focus', userSymbol: guess, actualSymbol: actual, match, username, email })
         .catch(e => console.error(e));
     }
 
@@ -277,7 +277,7 @@
           }
           const match = (actual === guess);
           results.push({ guess, actual, match });
-          addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
+          addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
             .catch(e => console.error(e));
         }
         let summary = '';
@@ -316,7 +316,7 @@
         `Your ${mode==='focus'?'focus':'guess'}: <b>${guess}</b><br>
          Actual: <b>${actual}</b><br>
          <span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: serverTimestamp(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
+      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, userSymbol: guess, actualSymbol: actual, match, username, email })
         .catch(e => console.error(e));
     }
 
@@ -324,7 +324,20 @@
       const modeFilter = prompt("Filter (focus, guesser, premonition) or leave blank:").toLowerCase();
       const snap = await getDocs(collection(db, 'qrng_trials'));
       const data = {Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
-      snap.forEach(d => { const e = d.data(); if(modeFilter && e.mode!==modeFilter) return; if(e.userSymbol in total){ total[e.userSymbol]++; if(e.match) data[e.userSymbol]++; rows.push([e.timestamp?.toDate().toISOString()||'', e.username||'', e.email||'', e.mode, e.userSymbol, e.actualSymbol, e.match]); }});
+      snap.forEach(d => {
+        const e = d.data();
+        if (modeFilter && e.mode !== modeFilter) return;
+        if (e.userSymbol in total) {
+          total[e.userSymbol]++;
+          if (e.match) data[e.userSymbol]++;
+          let ts = '';
+          if (e.timestamp) {
+            const dt = e.timestamp.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
+            ts = dt.toISOString().replace('T', ' ').split('.')[0];
+          }
+          rows.push([ts, e.username || '', e.email || '', e.mode, e.userSymbol, e.actualSymbol, e.match]);
+        }
+      });
       const labels = SYMBOLS;
       const matches = labels.map(s=>data[s]);
       const attempts = labels.map(s=>total[s]);
