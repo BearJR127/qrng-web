@@ -117,6 +117,7 @@
 
   <button onclick="runTrial()" id="trial-button">Start Trial</button>
   <button onclick="exportCSV()">Export CSV</button>
+  <button id="about-button">About</button>
 
   <div id="result"></div>
   <div id="live-container">
@@ -472,7 +473,6 @@
     window.exportCSV = exportCSV;
     window.submitIntuitionChoice = submitIntuitionChoice;
   </script>
-  <button id="about-button">About</button>
   <div id="about-modal">
     <h2>Welcome to Color Picking Guessing Game</h2>
     <p>This is a fun game to test your skills at picking random colors. This application picks random colors using two different modes: a "quantum" random number generator (QRNG) that converts the pixels from your <strong>camera</strong> into bits used to pick colors, and a software based RNG which generates colors from random.event() code. For the QRNG - no information from your camera is being stored, access is only used to create B&amp;W contrast data for random bit selection, and outside of software based bit selection there's no other monitoring or access.</p>
