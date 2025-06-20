@@ -239,6 +239,15 @@
       return getSymbolFromWebcam();
     }
 
+    async function computeHash(obj) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(obj));
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
     async function singleFocusTrial(username) {
       const guess = document.getElementById("single-choice").value;
       const actual = getSymbol();
@@ -252,7 +261,10 @@
         `Actual: <b>${actual}</b><br>` +
         `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
       const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
-      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode:'focus', rng, userSymbol: guess, actualSymbol: actual, match, username })
+      const record = { timestamp: new Date(), mode:'focus', rng, userSymbol: guess, actualSymbol: actual, match, username };
+      const hash = await computeHash({ ...record, timestamp: record.timestamp.toISOString() });
+      record.hash = hash;
+      addDoc(collection(db, 'qrng_trials'), record)
         .catch(e => console.error(e));
     }
 
@@ -273,6 +285,7 @@
     }
 
     async function runTrial() {
+      const submitTimestamp = new Date();
       const mode = document.getElementById("mode").value;
       const username = document.getElementById("username").value.trim() || 'unidentified';
       if (mode === 'focus') {
@@ -291,6 +304,7 @@
         const results = [];
         for (const guess of guesses) {
           const actual = getSymbol();
+          const rngTimestamp = new Date();
           if (!actual) {
             document.getElementById("result").innerText = "Insufficient random bits — try again.";
             return;
@@ -298,7 +312,12 @@
           const rng = document.getElementById("rng").value === 'event' ? 'Software' : 'Camera';
           const match = (actual === guess);
           results.push({ guess, actual, match });
-          addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, rng, userSymbol: guess, actualSymbol: actual, match, username })
+          const submitHash = await computeHash({ timestamp: submitTimestamp.toISOString(), mode, userSymbol: guess, username });
+          const rngHash = await computeHash({ timestamp: rngTimestamp.toISOString(), mode, rng, actualSymbol: actual });
+          const record = { timestamp: submitTimestamp, submitTimestamp, rngTimestamp, mode, rng, userSymbol: guess, actualSymbol: actual, match, username, submitHash, rngHash };
+          const hash = await computeHash({ ...record, timestamp: record.submitTimestamp.toISOString(), rngTimestamp: record.rngTimestamp.toISOString() });
+          record.hash = hash;
+          addDoc(collection(db, 'qrng_trials'), record)
             .catch(e => console.error(e));
         }
         let summary = '';
@@ -316,9 +335,10 @@
         return;
       }
 
-      let guess, actual;
+      let guess, actual, rngTimestamp;
       if (mode === 'guesser') {
         actual = getSymbol();
+        rngTimestamp = new Date();
         if (!actual) {
           document.getElementById("result").innerText = "Insufficient random bits — try again.";
           return;
@@ -326,6 +346,7 @@
         guess = document.getElementById("single-choice").value;
       } else {
         guess = document.getElementById("single-choice").value;
+        rngTimestamp = new Date();
         actual = getSymbol();
         if (!actual) {
           document.getElementById("result").innerText = "Insufficient random bits — try again.";
@@ -338,7 +359,12 @@
         `Your ${mode==='focus'?'focus':'guess'}: <b>${guess}</b><br>
          Actual: <b>${actual}</b><br>
          <span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-      addDoc(collection(db, 'qrng_trials'), { timestamp: new Date(), mode, rng, userSymbol: guess, actualSymbol: actual, match, username })
+      const submitHash = await computeHash({ timestamp: submitTimestamp.toISOString(), mode, userSymbol: guess, username });
+      const rngHash = await computeHash({ timestamp: rngTimestamp.toISOString(), mode, rng, actualSymbol: actual });
+      const record = { timestamp: submitTimestamp, submitTimestamp, rngTimestamp, mode, rng, userSymbol: guess, actualSymbol: actual, match, username, submitHash, rngHash };
+      const hash = await computeHash({ ...record, timestamp: record.submitTimestamp.toISOString(), rngTimestamp: record.rngTimestamp.toISOString() });
+      record.hash = hash;
+      addDoc(collection(db, 'qrng_trials'), record)
         .catch(e => console.error(e));
     }
 
@@ -352,12 +378,16 @@
         if (e.userSymbol in total) {
           total[e.userSymbol]++;
           if (e.match) data[e.userSymbol]++;
-          let ts = '';
+          let ts = '', rngTs = '';
           if (e.timestamp) {
             const dt = e.timestamp.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
             ts = dt.toISOString().replace('T', ' ').split('.')[0];
           }
-          rows.push([ts, e.username || '', e.mode, e.rng || '', e.userSymbol, e.actualSymbol, e.match]);
+          if (e.rngTimestamp) {
+            const rdt = e.rngTimestamp.toDate ? e.rngTimestamp.toDate() : new Date(e.rngTimestamp);
+            rngTs = rdt.toISOString().replace('T', ' ').split('.')[0];
+          }
+          rows.push([ts, rngTs, e.username || '', e.mode, e.rng || '', e.userSymbol, e.actualSymbol, e.match, e.submitHash || '', e.rngHash || '']);
         }
       });
       const labels = SYMBOLS;
@@ -376,7 +406,7 @@
       });
       const exportUser = document.getElementById('username').value.trim() || 'unidentified';
       let csv='username,'+exportUser+'\n'+
-              'timestamp,username,mode,RNG,userSymbol,actualSymbol,match\n'+
+              'submitTimestamp,rngTimestamp,username,mode,RNG,userSymbol,actualSymbol,match,submitHash,rngHash\n'+
               rows.map(r=>r.join(',')).join('\n')+
               '\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+
               stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
