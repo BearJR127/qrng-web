@@ -132,6 +132,28 @@ async function runGameLogic(){
   let nextRngTimestamp = null;
   let analysisChart = null;
   let allTrials = [];
+
+  function loadLocalTrials(){
+    try{
+      const data=JSON.parse(localStorage.getItem('qrng_trials')||'[]');
+      return Array.isArray(data)?data:[];
+    }catch(e){
+      console.error('Failed loading local trials',e);
+      return [];
+    }
+  }
+
+  function saveTrialLocal(record){
+    try{
+      const data=loadLocalTrials();
+      if(!data.some(t=>t.hash===record.hash)){
+        data.push(record);
+        localStorage.setItem('qrng_trials',JSON.stringify(data));
+      }
+    }catch(e){
+      console.error('Failed saving trial locally',e);
+    }
+  }
   const wheelTemplate=`
     <div class="color-wheel-container">
       <div class="wheel-arrow"></div>
@@ -304,8 +326,18 @@ async function runGameLogic(){
   }
 
   async function loadAllTrials(){
-    const snap=await getDocs(collection(db,'qrng_trials'));
-    allTrials=snap.docs.map(d=>d.data());
+    let local=loadLocalTrials();
+    allTrials=local;
+    try{
+      const snap=await getDocs(collection(db,'qrng_trials'));
+      const remote=snap.docs.map(d=>d.data());
+      for(const r of remote){
+        if(!allTrials.some(t=>t.hash===r.hash)) allTrials.push(r);
+      }
+      localStorage.setItem('qrng_trials',JSON.stringify(allTrials));
+    }catch(e){
+      console.error('Failed loading remote trials',e);
+    }
     const users=new Set(allTrials.map(e=>(e.username||'').trim()).filter(Boolean));
     const list=document.getElementById('user-directory');
     if(list){
@@ -442,6 +474,7 @@ async function runGameLogic(){
     const record={timestamp:new Date(),mode:'focus',rng,userSymbol:guess,actualSymbol:actual,match,username};
     const hash=await computeHash({...record,timestamp:record.timestamp.toISOString()});
     record.hash=hash;
+    saveTrialLocal(record);
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
   }
 
@@ -494,6 +527,7 @@ async function runGameLogic(){
         record.rngHash=rngHash;
         const hash=await computeHash({...record,timestamp:record.timestamp.toISOString(),rngTimestamp:record.rngTimestamp.toISOString()});
         record.hash=hash;
+        saveTrialLocal(record);
         addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
       }
       let summary='';
@@ -540,6 +574,7 @@ async function runGameLogic(){
     record.rngHash=rngHash;
     const hash=await computeHash({...record,timestamp:record.timestamp.toISOString(),rngTimestamp:record.rngTimestamp.toISOString()});
     record.hash=hash;
+    saveTrialLocal(record);
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
     if(mode==='guesser') prepareNextRng();
   }
