@@ -81,7 +81,8 @@ export function initGame(container){
         <option value="Camera">Camera</option>
         <option value="Software">Software</option>
       </select>
-      <input type="text" id="filter-user" placeholder="User" />
+      <input list="user-directory" type="text" id="filter-user" placeholder="User" />
+      <datalist id="user-directory"></datalist>
       <button id="analysis-refresh">Refresh</button>
     </div>
     <div id="analysis-stats"></div>
@@ -304,6 +305,9 @@ async function runGameLogic(){
   async function loadAllTrials(){
     const snap=await getDocs(collection(db,'qrng_trials'));
     allTrials=snap.docs.map(d=>d.data());
+    const users=new Set(allTrials.map(e=>(e.username||'').trim()).filter(Boolean));
+    const list=document.getElementById('user-directory');
+    if(list) list.innerHTML=Array.from(users).sort().map(u=>`<option value="${u}">`).join('');
     updateAnalysis();
   }
 
