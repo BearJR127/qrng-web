@@ -98,10 +98,10 @@ async function runGameLogic(){
         <path d="M50,50 L100,50 A50,50 0 0,1 50,100 z" fill="blue" data-color="Blue"></path>
         <path d="M50,50 L50,100 A50,50 0 0,1 0,50 z" fill="green" data-color="Green"></path>
         <path d="M50,50 L0,50 A50,50 0 0,1 50,0 z" fill="yellow" data-color="Yellow"></path>
-        <text x="75" y="25" class="wheel-label">Red</text>
-        <text x="75" y="75" class="wheel-label">Blue</text>
-        <text x="25" y="75" class="wheel-label">Green</text>
-        <text x="25" y="25" class="wheel-label">Yellow</text>
+        <text x="75" y="25" class="wheel-label">R</text>
+        <text x="75" y="75" class="wheel-label">B</text>
+        <text x="25" y="75" class="wheel-label">G</text>
+        <text x="25" y="25" class="wheel-label">Y</text>
       </svg>
     </div>`;
   const wheelHandlers={};
