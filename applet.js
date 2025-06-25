@@ -113,10 +113,10 @@ async function runGameLogic(){
     wheel.innerHTML=wheelTemplate;
     const svg=wheel.querySelector('svg');
     const paths=wheel.querySelectorAll('path');
-    let rotation=0;
-    const base=45;
+    let rotation=-45;
+    const base=0;
     function update(){
-      const idx=((Math.round(rotation/90)%4)+4)%4;
+      const idx=((Math.round((-rotation-45)/90)%4)+4)%4;
       const color=SYMBOLS[idx];
       input.value=color;
       paths.forEach(p=>p.classList.toggle('selected',p.dataset.color===color));
@@ -147,13 +147,14 @@ async function runGameLogic(){
       if(!dragging) return;
       svg.releasePointerCapture(e.pointerId);
       dragging=false;
-      rotation=Math.round(rotation/90)*90;
+      const idx=((Math.round((-rotation-45)/90)%4)+4)%4;
+      rotation=-45-idx*90;
       update();
     }
     svg.addEventListener('pointerup',endDrag);
     svg.addEventListener('pointercancel',endDrag);
     svg.addEventListener('pointerleave',endDrag);
-    wheelHandlers[inputId]=color=>{ rotation=SYMBOLS.indexOf(color)*90; update(); };
+    wheelHandlers[inputId]=color=>{ rotation=-45-SYMBOLS.indexOf(color)*90; update(); };
   }
 
   function setWheelDisabled(inputId,disabled){
