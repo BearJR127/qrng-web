@@ -67,16 +67,20 @@ export function initGame(container){
 
 async function runGameLogic(){
   const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js');
+  const { getAnalytics } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js');
   const { getFirestore, collection, addDoc, getDocs, onSnapshot } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
   const firebaseConfig = {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: ''
+    apiKey: "AIzaSyBQgVavR044F95yG6ETansdwJzer097nqo",
+    authDomain: "colorguesser-50a43.firebaseapp.com",
+    projectId: "colorguesser-50a43",
+    storageBucket: "colorguesser-50a43.firebasestorage.app",
+    messagingSenderId: "154711693442",
+    appId: "1:154711693442:web:064528ee7d86b7e64dbc9b",
+    measurementId: "G-VC3V8WYD0K",
+    databaseURL: "https://colorguesser-50a43-default-rtdb.firebaseio.com/"
   };
   const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
   const SYMBOLS = ['Red','Blue','Green','Yellow'];
