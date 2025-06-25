@@ -1,9 +1,21 @@
+const defaultUsername = (() => {
+  const now = new Date();
+  const pad = n => n.toString().padStart(2,'0');
+  return 'unidentified' +
+    pad(now.getDate()) +
+    pad(now.getMonth()+1) +
+    now.getFullYear() +
+    pad(now.getHours()) +
+    pad(now.getMinutes()) +
+    pad(now.getSeconds());
+})();
+
 export function initGame(container){
   container.innerHTML = `
   <h1>Color Picking Guessing Game</h1>
   <div>
     <label>Username:</label>
-    <input type="text" id="username" value="unidentified" />
+    <input type="text" id="username" value="${defaultUsername}" />
   </div>
   <div id="options-row">
     <div>
@@ -332,7 +344,7 @@ async function runGameLogic(){
     const input=document.getElementById(`user-choice-${currentIntuitionIndex}`);
     const guess=input.value;
     const timestamp=new Date();
-    const username=document.getElementById('username').value.trim() || 'unidentified';
+    const username=document.getElementById('username').value.trim() || defaultUsername;
     const submitHash=await computeHash({timestamp: timestamp.toISOString(), mode:'intuition', userSymbol: guess, username});
     intuitionGuesses.push({guess,timestamp,submitHash});
     input.disabled=true;
@@ -444,7 +456,7 @@ async function runGameLogic(){
   async function runTrial(){
     const submitTimestamp=new Date();
     const mode=document.getElementById('mode').value;
-    const username=document.getElementById('username').value.trim() || 'unidentified';
+    const username=document.getElementById('username').value.trim() || defaultUsername;
     if(mode==='focus'){
       if(focusRunning){
         stopFocusLoop();
@@ -575,7 +587,7 @@ async function runGameLogic(){
     const pvalAll=allN?(1-jStat.chisquare.cdf(chiAll,1)).toFixed(5):0;
     const ciAll=allN?`±${(z*Math.sqrt((allK/allN)*(1-allK/allN)/allN)*100).toFixed(1)}`:'±0';
     stats.push({s:'All',n:allN,k:allK,rate:allRate,pval:pvalAll,power:powerAll,ci:ciAll});
-    const exportUser=document.getElementById('username').value.trim() || 'unidentified';
+    const exportUser=document.getElementById('username').value.trim() || defaultUsername;
     let csv='username,'+exportUser+'\n'+
             'trialNumber,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
             rows.map((r,i)=>[i+1,...r.row].join(',')).join('\n')+
