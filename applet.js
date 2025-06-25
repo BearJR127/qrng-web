@@ -52,6 +52,29 @@ export function initGame(container){
     <video id="video" width="320" height="240" autoplay muted></video>
   </div>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <div id="analysis-container">
+    <h3>Historical Analysis</h3>
+    <div id="analysis-options">
+      <input type="date" id="filter-start" />
+      <span>to</span>
+      <input type="date" id="filter-end" />
+      <select id="filter-mode">
+        <option value="">All Modes</option>
+        <option value="focus">Focus</option>
+        <option value="guesser">Guesser</option>
+        <option value="intuition">Intuition</option>
+      </select>
+      <select id="filter-rng">
+        <option value="">All RNG</option>
+        <option value="Camera">Camera</option>
+        <option value="Software">Software</option>
+      </select>
+      <input type="text" id="filter-user" placeholder="User" />
+      <button id="analysis-refresh">Refresh</button>
+    </div>
+    <div id="analysis-stats"></div>
+    <canvas id="analysis-chart" width="320" height="240"></canvas>
+  </div>
   <div id="about-modal">
     <h2>Welcome to Color Picking Guessing Game</h2>
     <p>This is a fun game to test your skills at picking random colors. This application picks random colors using two different modes: a "quantum" random number generator (QRNG) that converts the pixels from your <strong>camera</strong> into bits used to pick colors, and a software based RNG which generates colors from random.event() code. For the QRNG - no information from your camera is being stored, access is only used to create B&W contrast data for random bit selection, and outside of software based bit selection there's no other monitoring or access.</p>
@@ -94,6 +117,8 @@ async function runGameLogic(){
   let focusRunning = false;
   let nextActual = null;
   let nextRngTimestamp = null;
+  let analysisChart = null;
+  let allTrials = [];
   const wheelTemplate=`
     <div class="color-wheel-container">
       <div class="wheel-arrow"></div>
@@ -200,6 +225,81 @@ async function runGameLogic(){
     onSnapshot(collection(db, 'qrng_trials'), snap => updateChart(snap));
   }
 
+  function parseDateField(f){
+    return f ? (f.toDate ? f.toDate() : new Date(f)) : null;
+  }
+
+  function computeStats(matches, attempts){
+    const p0=1/4, z=jStat.normal.inv(0.975,0,1);
+    const stats=SYMBOLS.map((s,i)=>{
+      const n=attempts[i], k=matches[i];
+      const rate=n?((k/n)*100).toFixed(1):0;
+      const se0=Math.sqrt(p0*(1-p0)/n), delta=(k/n)-p0, mu=delta/se0;
+      const power=n?((jStat.normal.cdf(-z-mu)+1-jStat.normal.cdf(z-mu)).toFixed(3)):0;
+      const chi=n?((k-n*p0)**2/(n*p0)+((n-k)-n*(1-p0))**2/(n*(1-p0))):0;
+      const pval=n?(1-jStat.chisquare.cdf(chi,1)).toFixed(5):0;
+      const ci=n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
+      return {s,n,k,rate,pval,power,ci};
+    });
+    const allN=attempts.reduce((a,b)=>a+b,0);
+    const allK=matches.reduce((a,b)=>a+b,0);
+    const allRate=allN?((allK/allN)*100).toFixed(1):0;
+    const seAll=Math.sqrt(p0*(1-p0)/allN), deltaAll=(allK/allN)-p0, muAll=deltaAll/seAll;
+    const powerAll=allN?((jStat.normal.cdf(-z-muAll)+1-jStat.normal.cdf(z-muAll)).toFixed(3)):0;
+    const chiAll=allN?((allK-allN*p0)**2/(allN*p0)+((allN-allK)-allN*(1-p0))**2/(allN*(1-p0))):0;
+    const pvalAll=allN?(1-jStat.chisquare.cdf(chiAll,1)).toFixed(5):0;
+    const ciAll=allN?`±${(z*Math.sqrt((allK/allN)*(1-allK/allN)/allN)*100).toFixed(1)}`:'±0';
+    stats.push({s:'All',n:allN,k:allK,rate:allRate,pval:pvalAll,power:powerAll,ci:ciAll});
+    return stats;
+  }
+
+  function updateAnalysis(){
+    const start=document.getElementById('filter-start').value;
+    const end=document.getElementById('filter-end').value;
+    const mode=document.getElementById('filter-mode').value;
+    const rng=document.getElementById('filter-rng').value;
+    const user=document.getElementById('filter-user').value.trim();
+    const startDate=start?new Date(start):null;
+    const endDate=end?new Date(end+'T23:59:59'):null;
+    const filtered=allTrials.filter(e=>{
+      const d=parseDateField(e.rngTimestamp||e.timestamp);
+      if(startDate && (!d || d<startDate)) return false;
+      if(endDate && (!d || d>endDate)) return false;
+      if(mode && e.mode!==mode) return false;
+      if(rng && e.rng!==rng) return false;
+      if(user && (e.username||'')!==user) return false;
+      return true;
+    });
+    const data={Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0};
+    filtered.forEach(e=>{
+      if(e.userSymbol in total){
+        total[e.userSymbol]++;
+        if(e.match) data[e.userSymbol]++;
+      }
+    });
+    const labels=SYMBOLS.slice(), matches=labels.map(s=>data[s]), attempts=labels.map(s=>total[s]);
+    const allMatches=matches.reduce((a,b)=>a+b,0), allAttempts=attempts.reduce((a,b)=>a+b,0);
+    labels.push('All');
+    const datasetData=SYMBOLS.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0);
+    datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
+    if(analysisChart) analysisChart.destroy();
+    const ctxa=document.getElementById('analysis-chart').getContext('2d');
+    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','gray']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
+    const stats=computeStats(matches,attempts);
+    document.getElementById('analysis-stats').innerHTML=stats.map(s=>`${s.s}: ${s.k}/${s.n} (${s.rate}% ${s.ci}, p=${s.pval}, power=${s.power})`).join('<br>') || 'No data';
+  }
+
+  async function loadAllTrials(){
+    const snap=await getDocs(collection(db,'qrng_trials'));
+    allTrials=snap.docs.map(d=>d.data());
+    updateAnalysis();
+  }
+
+  function initAnalysisDashboard(){
+    document.getElementById('analysis-refresh').addEventListener('click',loadAllTrials);
+    loadAllTrials();
+  }
+
   function updateUIForMode(){
     const m=document.getElementById('mode').value;
     document.getElementById('single-choice-container').style.display = m==='intuition'?'none':'block';
@@ -214,6 +314,7 @@ async function runGameLogic(){
   initLiveDashboard();
   setupWheel('single-choice');
   for(let i=1;i<=5;i++) setupWheel(`user-choice-${i}`);
+  initAnalysisDashboard();
 
   function resetIntuitionChoices(){
     intuitionGuesses=[];
