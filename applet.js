@@ -23,46 +23,22 @@ export function initGame(container){
     </div>
     <div id="single-choice-container">
       <label>Select a Color:</label>
-      <select id="single-choice">
-        <option value="Red">🟥 Red</option>
-        <option value="Blue">🟦 Blue</option>
-        <option value="Green">🟩 Green</option>
-        <option value="Yellow">🟨 Yellow</option>
-      </select>
+      <input type="hidden" id="single-choice" value="Red" />
+      <div class="color-wheel" data-input="single-choice"></div>
     </div>
   </div>
   <div id="intuition-inputs" style="display:none;">
     <label>Select 5 Colors:</label><br>
-    <select class="intuition-choice" id="user-choice-1">
-      <option value="Red">🟥 Red</option>
-      <option value="Blue">🟦 Blue</option>
-      <option value="Green">🟩 Green</option>
-      <option value="Yellow">🟨 Yellow</option>
-    </select>
-    <select class="intuition-choice" id="user-choice-2">
-      <option value="Red">🟥 Red</option>
-      <option value="Blue">🟦 Blue</option>
-      <option value="Green">🟩 Green</option>
-      <option value="Yellow">🟨 Yellow</option>
-    </select>
-    <select class="intuition-choice" id="user-choice-3">
-      <option value="Red">🟥 Red</option>
-      <option value="Blue">🟦 Blue</option>
-      <option value="Green">🟩 Green</option>
-      <option value="Yellow">🟨 Yellow</option>
-    </select>
-    <select class="intuition-choice" id="user-choice-4">
-      <option value="Red">🟥 Red</option>
-      <option value="Blue">🟦 Blue</option>
-      <option value="Green">🟩 Green</option>
-      <option value="Yellow">🟨 Yellow</option>
-    </select>
-    <select class="intuition-choice" id="user-choice-5">
-      <option value="Red">🟥 Red</option>
-      <option value="Blue">🟦 Blue</option>
-      <option value="Green">🟩 Green</option>
-      <option value="Yellow">🟨 Yellow</option>
-    </select>
+    <input type="hidden" class="intuition-choice" id="user-choice-1" value="Red" />
+    <div class="color-wheel intuition-wheel" data-input="user-choice-1"></div>
+    <input type="hidden" class="intuition-choice" id="user-choice-2" value="Red" />
+    <div class="color-wheel intuition-wheel" data-input="user-choice-2"></div>
+    <input type="hidden" class="intuition-choice" id="user-choice-3" value="Red" />
+    <div class="color-wheel intuition-wheel" data-input="user-choice-3"></div>
+    <input type="hidden" class="intuition-choice" id="user-choice-4" value="Red" />
+    <div class="color-wheel intuition-wheel" data-input="user-choice-4"></div>
+    <input type="hidden" class="intuition-choice" id="user-choice-5" value="Red" />
+    <div class="color-wheel intuition-wheel" data-input="user-choice-5"></div>
   </div>
   <button id="intuition-submit" onclick="submitIntuitionChoice()" style="display:none;">Submit Choice</button>
   <button onclick="runTrial()" id="trial-button">Start Trial</button>
@@ -114,6 +90,39 @@ async function runGameLogic(){
   let focusRunning = false;
   let nextActual = null;
   let nextRngTimestamp = null;
+  const wheelTemplate=`
+    <svg viewBox="0 0 100 100" class="color-wheel-svg">
+      <path d="M50,50 L50,0 A50,50 0 0,1 100,50 z" fill="red" data-color="Red"></path>
+      <path d="M50,50 L100,50 A50,50 0 0,1 50,100 z" fill="blue" data-color="Blue"></path>
+      <path d="M50,50 L50,100 A50,50 0 0,1 0,50 z" fill="green" data-color="Green"></path>
+      <path d="M50,50 L0,50 A50,50 0 0,1 50,0 z" fill="yellow" data-color="Yellow"></path>
+      <text x="75" y="25" class="wheel-label">Red</text>
+      <text x="75" y="75" class="wheel-label">Blue</text>
+      <text x="25" y="75" class="wheel-label">Green</text>
+      <text x="25" y="25" class="wheel-label">Yellow</text>
+    </svg>`;
+  const wheelHandlers={};
+
+  function setupWheel(inputId){
+    const input=document.getElementById(inputId);
+    const wheel=document.querySelector(`.color-wheel[data-input="${inputId}"]`);
+    if(!wheel) return;
+    wheel.innerHTML=wheelTemplate;
+    const paths=wheel.querySelectorAll('path');
+    function selectColor(color){
+      input.value=color;
+      paths.forEach(p=>p.classList.toggle('selected',p.dataset.color===color));
+    }
+    paths.forEach(p=>p.addEventListener('click',()=>selectColor(p.dataset.color)));
+    selectColor(input.value||'Red');
+    wheelHandlers[inputId]=selectColor;
+  }
+
+  function setWheelDisabled(inputId,disabled){
+    const wheel=document.querySelector(`.color-wheel[data-input="${inputId}"]`);
+    if(!wheel) return;
+    wheel.classList.toggle('disabled',disabled);
+  }
 
   function updateChart(snapshot) {
     const data = {Red:0,Blue:0,Green:0,Yellow:0},
@@ -159,29 +168,35 @@ async function runGameLogic(){
   document.getElementById('mode').addEventListener('change', updateUIForMode);
   updateUIForMode();
   initLiveDashboard();
+  setupWheel('single-choice');
+  for(let i=1;i<=5;i++) setupWheel(`user-choice-${i}`);
 
   function resetIntuitionChoices(){
     intuitionGuesses=[];
     currentIntuitionIndex=1;
     for(let i=1;i<=5;i++){
-      const sel=document.getElementById(`user-choice-${i}`);
-      sel.disabled=(i!==1);
-      sel.selectedIndex=0;
+      const input=document.getElementById(`user-choice-${i}`);
+      input.disabled=(i!==1);
+      setWheelDisabled(input.id,input.disabled);
+      if(wheelHandlers[input.id]) wheelHandlers[input.id]('Red');
     }
     document.getElementById('intuition-submit').disabled=false;
   }
 
   async function submitIntuitionChoice(){
-    const sel=document.getElementById(`user-choice-${currentIntuitionIndex}`);
-    const guess=sel.value;
+    const input=document.getElementById(`user-choice-${currentIntuitionIndex}`);
+    const guess=input.value;
     const timestamp=new Date();
     const username=document.getElementById('username').value.trim() || 'unidentified';
     const submitHash=await computeHash({timestamp: timestamp.toISOString(), mode:'intuition', userSymbol: guess, username});
     intuitionGuesses.push({guess,timestamp,submitHash});
-    sel.disabled=true;
+    input.disabled=true;
+    setWheelDisabled(input.id,true);
     currentIntuitionIndex++;
     if(currentIntuitionIndex<=5){
-      document.getElementById(`user-choice-${currentIntuitionIndex}`).disabled=false;
+      const nextInput=document.getElementById(`user-choice-${currentIntuitionIndex}`);
+      nextInput.disabled=false;
+      setWheelDisabled(nextInput.id,false);
     }else{
       document.getElementById('intuition-submit').disabled=true;
     }
