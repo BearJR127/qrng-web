@@ -132,12 +132,14 @@ async function runGameLogic(){
       return Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI;
     }
     svg.addEventListener('pointerdown',e=>{
+      e.preventDefault();
       dragging=true;
       startAngle=angleFromEvent(e)-rotation;
       svg.setPointerCapture(e.pointerId);
     });
     svg.addEventListener('pointermove',e=>{
       if(!dragging) return;
+      e.preventDefault();
       rotation=angleFromEvent(e)-startAngle;
       svg.style.transform=`rotate(${base+rotation}deg)`;
     });
