@@ -460,6 +460,15 @@ async function runGameLogic(){
       const ci=n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
       return {s,n,k,rate,pval,power,ci};
     });
+    const allN=attempts.reduce((a,b)=>a+b,0);
+    const allK=matches.reduce((a,b)=>a+b,0);
+    const allRate=allN?((allK/allN)*100).toFixed(1):0;
+    const seAll=Math.sqrt(p0*(1-p0)/allN), deltaAll=(allK/allN)-p0, muAll=deltaAll/seAll;
+    const powerAll=allN?((jStat.normal.cdf(-z-muAll)+1-jStat.normal.cdf(z-muAll)).toFixed(3)):0;
+    const chiAll=allN?((allK-allN*p0)**2/(allN*p0) + ((allN-allK)-allN*(1-p0))**2/(allN*(1-p0))):0;
+    const pvalAll=allN?(1-jStat.chisquare.cdf(chiAll,1)).toFixed(5):0;
+    const ciAll=allN?`±${(z*Math.sqrt((allK/allN)*(1-allK/allN)/allN)*100).toFixed(1)}`:'±0';
+    stats.push({s:'All',n:allN,k:allK,rate:allRate,pval:pvalAll,power:powerAll,ci:ciAll});
     const exportUser=document.getElementById('username').value.trim() || 'unidentified';
     let csv='username,'+exportUser+'\n'+
             'trialNumber,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
