@@ -91,16 +91,19 @@ async function runGameLogic(){
   let nextActual = null;
   let nextRngTimestamp = null;
   const wheelTemplate=`
-    <svg viewBox="0 0 100 100" class="color-wheel-svg">
-      <path d="M50,50 L50,0 A50,50 0 0,1 100,50 z" fill="red" data-color="Red"></path>
-      <path d="M50,50 L100,50 A50,50 0 0,1 50,100 z" fill="blue" data-color="Blue"></path>
-      <path d="M50,50 L50,100 A50,50 0 0,1 0,50 z" fill="green" data-color="Green"></path>
-      <path d="M50,50 L0,50 A50,50 0 0,1 50,0 z" fill="yellow" data-color="Yellow"></path>
-      <text x="75" y="25" class="wheel-label">Red</text>
-      <text x="75" y="75" class="wheel-label">Blue</text>
-      <text x="25" y="75" class="wheel-label">Green</text>
-      <text x="25" y="25" class="wheel-label">Yellow</text>
-    </svg>`;
+    <div class="color-wheel-container">
+      <div class="wheel-arrow"></div>
+      <svg viewBox="0 0 100 100" class="color-wheel-svg rotatable">
+        <path d="M50,50 L50,0 A50,50 0 0,1 100,50 z" fill="red" data-color="Red"></path>
+        <path d="M50,50 L100,50 A50,50 0 0,1 50,100 z" fill="blue" data-color="Blue"></path>
+        <path d="M50,50 L50,100 A50,50 0 0,1 0,50 z" fill="green" data-color="Green"></path>
+        <path d="M50,50 L0,50 A50,50 0 0,1 50,0 z" fill="yellow" data-color="Yellow"></path>
+        <text x="75" y="25" class="wheel-label">Red</text>
+        <text x="75" y="75" class="wheel-label">Blue</text>
+        <text x="25" y="75" class="wheel-label">Green</text>
+        <text x="25" y="25" class="wheel-label">Yellow</text>
+      </svg>
+    </div>`;
   const wheelHandlers={};
 
   function setupWheel(inputId){
@@ -108,14 +111,47 @@ async function runGameLogic(){
     const wheel=document.querySelector(`.color-wheel[data-input="${inputId}"]`);
     if(!wheel) return;
     wheel.innerHTML=wheelTemplate;
+    const svg=wheel.querySelector('svg');
     const paths=wheel.querySelectorAll('path');
-    function selectColor(color){
+    let rotation=0;
+    const base=45;
+    function update(){
+      const idx=((Math.round(rotation/90)%4)+4)%4;
+      const color=SYMBOLS[idx];
       input.value=color;
       paths.forEach(p=>p.classList.toggle('selected',p.dataset.color===color));
+      svg.style.transform=`rotate(${base+rotation}deg)`;
     }
-    paths.forEach(p=>p.addEventListener('click',()=>selectColor(p.dataset.color)));
-    selectColor(input.value||'Red');
-    wheelHandlers[inputId]=selectColor;
+    update();
+    let startAngle=0;
+    let dragging=false;
+    function angleFromEvent(e){
+      const rect=svg.getBoundingClientRect();
+      const cx=rect.left+rect.width/2;
+      const cy=rect.top+rect.height/2;
+      return Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI;
+    }
+    svg.addEventListener('pointerdown',e=>{
+      dragging=true;
+      startAngle=angleFromEvent(e)-rotation;
+      svg.setPointerCapture(e.pointerId);
+    });
+    svg.addEventListener('pointermove',e=>{
+      if(!dragging) return;
+      rotation=angleFromEvent(e)-startAngle;
+      svg.style.transform=`rotate(${base+rotation}deg)`;
+    });
+    function endDrag(e){
+      if(!dragging) return;
+      svg.releasePointerCapture(e.pointerId);
+      dragging=false;
+      rotation=Math.round(rotation/90)*90;
+      update();
+    }
+    svg.addEventListener('pointerup',endDrag);
+    svg.addEventListener('pointercancel',endDrag);
+    svg.addEventListener('pointerleave',endDrag);
+    wheelHandlers[inputId]=color=>{ rotation=SYMBOLS.indexOf(color)*90; update(); };
   }
 
   function setWheelDisabled(inputId,disabled){
