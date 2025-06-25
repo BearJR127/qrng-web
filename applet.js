@@ -157,10 +157,10 @@ async function runGameLogic(){
   const sliderTemplate=`
     <div class="color-slider-container">
       <div class="color-slider-bar">
-        <div class="red" data-color="Red"></div>
-        <div class="blue" data-color="Blue"></div>
-        <div class="green" data-color="Green"></div>
-        <div class="yellow" data-color="Yellow"></div>
+        <div class="red" data-color="Red">R</div>
+        <div class="blue" data-color="Blue">B</div>
+        <div class="green" data-color="Green">G</div>
+        <div class="yellow" data-color="Yellow">Y</div>
       </div>
       <div class="slider-marker"></div>
     </div>`;

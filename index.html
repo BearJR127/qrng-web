@@ -67,11 +67,21 @@
     .color-slider.disabled { opacity: 0.5; pointer-events: none; }
     .color-slider-container { position: relative; width: 200px; height: 20px; }
     .color-slider-bar { display: flex; width: 100%; height: 100%; border-radius: 10px; overflow: hidden; }
-    .color-slider-bar div { flex: 1; }
+    .color-slider-bar div {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+    }
     .color-slider-bar .red { background: red; }
     .color-slider-bar .blue { background: blue; }
     .color-slider-bar .green { background: green; }
-    .color-slider-bar .yellow { background: yellow; }
+    .color-slider-bar .yellow {
+      background: yellow;
+      color: #000;
+    }
     .slider-marker { position: absolute; top: -4px; width: 4px; height: 28px; background: #000; border-radius: 2px; transform: translateX(-50%); pointer-events: none; transition: left 0.2s ease; }
     #analysis-container { margin-top: 30px; }
     #analysis-options { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
