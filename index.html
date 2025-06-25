@@ -63,36 +63,16 @@
       max-height: 90vh;
       overflow-y: auto;
     }
-    .color-wheel-svg { width: 120px; height: 120px; touch-action: none; }
-    .color-wheel-svg path { stroke: #555; stroke-width: 1; cursor: pointer; }
-    .color-wheel-svg path.selected { stroke: #000; stroke-width: 3; }
-    .color-wheel { display: inline-block; margin: 5px; }
-    .color-wheel.disabled { opacity: 0.5; pointer-events: none; }
-    .wheel-label {
-      fill: #000;
-      font-size: 14px;
-      pointer-events: none;
-      font-weight: bold;
-      text-anchor: middle;
-      dominant-baseline: middle;
-    }
-    .color-wheel-container { position: relative; display: inline-block; }
-    .wheel-arrow {
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 8px solid transparent;
-      border-right: 8px solid transparent;
-      border-bottom: 12px solid #000;
-      pointer-events: none;
-    }
-    .color-wheel-svg.rotatable {
-      transition: transform 0.2s ease;
-      transform-origin: 50% 50%;
-    }
+    .color-slider { display: inline-block; margin: 5px; }
+    .color-slider.disabled { opacity: 0.5; pointer-events: none; }
+    .color-slider-container { position: relative; width: 200px; height: 20px; }
+    .color-slider-bar { display: flex; width: 100%; height: 100%; border-radius: 10px; overflow: hidden; }
+    .color-slider-bar div { flex: 1; }
+    .color-slider-bar .red { background: red; }
+    .color-slider-bar .blue { background: blue; }
+    .color-slider-bar .green { background: green; }
+    .color-slider-bar .yellow { background: yellow; }
+    .slider-marker { position: absolute; top: -4px; width: 4px; height: 28px; background: #000; border-radius: 2px; transform: translateX(-50%); pointer-events: none; transition: left 0.2s ease; }
     #analysis-container { margin-top: 30px; }
     #analysis-options { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
     #analysis-stats { margin-top: 10px; font-size: 14px; }
