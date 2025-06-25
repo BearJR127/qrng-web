@@ -116,7 +116,8 @@ async function runGameLogic(){
     let rotation=-45;
     const base=0;
     function update(){
-      const idx=((Math.round((-rotation-45)/90)%4)+4)%4;
+      const rawIdx=Math.round((-rotation-45)/90);
+      const idx=((rawIdx%4)+4)%4;
       const color=SYMBOLS[idx];
       input.value=color;
       paths.forEach(p=>p.classList.toggle('selected',p.dataset.color===color));
@@ -147,8 +148,8 @@ async function runGameLogic(){
       if(!dragging) return;
       svg.releasePointerCapture(e.pointerId);
       dragging=false;
-      const idx=((Math.round((-rotation-45)/90)%4)+4)%4;
-      rotation=-45-idx*90;
+      const rawIdx=Math.round((-rotation-45)/90);
+      rotation=-45-rawIdx*90;
       update();
     }
     svg.addEventListener('pointerup',endDrag);
