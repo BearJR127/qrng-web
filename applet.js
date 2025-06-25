@@ -81,7 +81,7 @@ export function initGame(container){
         <option value="Camera">Camera</option>
         <option value="Software">Software</option>
       </select>
-      <input list="user-directory" type="text" id="filter-user" placeholder="User" />
+      <input list="user-directory" type="text" id="filter-user" placeholder="User" value="All" />
       <datalist id="user-directory"></datalist>
       <button id="analysis-refresh">Refresh</button>
     </div>
@@ -272,6 +272,7 @@ async function runGameLogic(){
     const mode=document.getElementById('filter-mode').value;
     const rng=document.getElementById('filter-rng').value;
     const user=document.getElementById('filter-user').value.trim();
+    const normalizedUser=user.toLowerCase();
     const startDate=start?new Date(start):null;
     const endDate=end?new Date(end+'T23:59:59'):null;
     const filtered=allTrials.filter(e=>{
@@ -280,7 +281,7 @@ async function runGameLogic(){
       if(endDate && (!d || d>endDate)) return false;
       if(mode && e.mode!==mode) return false;
       if(rng && e.rng!==rng) return false;
-      if(user && (e.username||'')!==user) return false;
+      if(user && normalizedUser!=='all' && (e.username||'')!==user) return false;
       return true;
     });
     const data={Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0};
@@ -307,7 +308,10 @@ async function runGameLogic(){
     allTrials=snap.docs.map(d=>d.data());
     const users=new Set(allTrials.map(e=>(e.username||'').trim()).filter(Boolean));
     const list=document.getElementById('user-directory');
-    if(list) list.innerHTML=Array.from(users).sort().map(u=>`<option value="${u}">`).join('');
+    if(list){
+      const options=Array.from(users).sort().map(u=>`<option value="${u}">`).join('');
+      list.innerHTML=`<option value="All">All</option>`+options;
+    }
     updateAnalysis();
   }
 
