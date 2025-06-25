@@ -36,21 +36,21 @@ export function initGame(container){
     <div id="single-choice-container">
       <label>Select a Color:</label>
       <input type="hidden" id="single-choice" value="Red" />
-      <div class="color-wheel" data-input="single-choice"></div>
+      <div class="color-slider" data-input="single-choice"></div>
     </div>
   </div>
   <div id="intuition-inputs" style="display:none;">
     <label>Select 5 Colors:</label><br>
     <input type="hidden" class="intuition-choice" id="user-choice-1" value="Red" />
-    <div class="color-wheel intuition-wheel" data-input="user-choice-1"></div>
+    <div class="color-slider intuition-slider" data-input="user-choice-1"></div>
     <input type="hidden" class="intuition-choice" id="user-choice-2" value="Red" />
-    <div class="color-wheel intuition-wheel" data-input="user-choice-2"></div>
+    <div class="color-slider intuition-slider" data-input="user-choice-2"></div>
     <input type="hidden" class="intuition-choice" id="user-choice-3" value="Red" />
-    <div class="color-wheel intuition-wheel" data-input="user-choice-3"></div>
+    <div class="color-slider intuition-slider" data-input="user-choice-3"></div>
     <input type="hidden" class="intuition-choice" id="user-choice-4" value="Red" />
-    <div class="color-wheel intuition-wheel" data-input="user-choice-4"></div>
+    <div class="color-slider intuition-slider" data-input="user-choice-4"></div>
     <input type="hidden" class="intuition-choice" id="user-choice-5" value="Red" />
-    <div class="color-wheel intuition-wheel" data-input="user-choice-5"></div>
+    <div class="color-slider intuition-slider" data-input="user-choice-5"></div>
   </div>
   <button id="intuition-submit" onclick="submitIntuitionChoice()" style="display:none;">Submit Choice</button>
   <button onclick="runTrial()" id="trial-button">Start Trial</button>
@@ -154,78 +154,66 @@ async function runGameLogic(){
       console.error('Failed saving trial locally',e);
     }
   }
-  const wheelTemplate=`
-    <div class="color-wheel-container">
-      <div class="wheel-arrow"></div>
-      <svg viewBox="0 0 100 100" class="color-wheel-svg rotatable">
-        <path d="M50,50 L50,0 A50,50 0 0,1 100,50 z" fill="red" data-color="Red"></path>
-        <path d="M50,50 L100,50 A50,50 0 0,1 50,100 z" fill="blue" data-color="Blue"></path>
-        <path d="M50,50 L50,100 A50,50 0 0,1 0,50 z" fill="green" data-color="Green"></path>
-        <path d="M50,50 L0,50 A50,50 0 0,1 50,0 z" fill="yellow" data-color="Yellow"></path>
-        <text x="75" y="25" class="wheel-label" text-anchor="middle" dominant-baseline="middle">R</text>
-        <text x="75" y="75" class="wheel-label" text-anchor="middle" dominant-baseline="middle">B</text>
-        <text x="25" y="75" class="wheel-label" text-anchor="middle" dominant-baseline="middle">G</text>
-        <text x="25" y="25" class="wheel-label" text-anchor="middle" dominant-baseline="middle">Y</text>
-      </svg>
+  const sliderTemplate=`
+    <div class="color-slider-container">
+      <div class="color-slider-bar">
+        <div class="red" data-color="Red"></div>
+        <div class="blue" data-color="Blue"></div>
+        <div class="green" data-color="Green"></div>
+        <div class="yellow" data-color="Yellow"></div>
+      </div>
+      <div class="slider-marker"></div>
     </div>`;
-  const wheelHandlers={};
+  const sliderHandlers={};
 
-  function setupWheel(inputId){
+  function setupSlider(inputId){
     const input=document.getElementById(inputId);
-    const wheel=document.querySelector(`.color-wheel[data-input="${inputId}"]`);
-    if(!wheel) return;
-    wheel.innerHTML=wheelTemplate;
-    const svg=wheel.querySelector('svg');
-    const paths=wheel.querySelectorAll('path');
-    let rotation=-45;
-    const base=0;
-    function update(){
-      const rawIdx=Math.round((-rotation-45)/90);
-      const idx=((rawIdx%4)+4)%4;
+    const slider=document.querySelector(`.color-slider[data-input="${inputId}"]`);
+    if(!slider) return;
+    slider.innerHTML=sliderTemplate;
+    const container=slider.querySelector('.color-slider-container');
+    const marker=slider.querySelector('.slider-marker');
+    function setIndex(idx){
+      idx=((idx%4)+4)%4;
       const color=SYMBOLS[idx];
       input.value=color;
-      paths.forEach(p=>p.classList.toggle('selected',p.dataset.color===color));
-      svg.style.transform=`rotate(${base+rotation}deg)`;
+      marker.style.left=`${(idx+0.5)*25}%`;
     }
-    update();
-    let startAngle=0;
+    function indexFromEvent(e){
+      const rect=container.getBoundingClientRect();
+      let x=e.clientX-rect.left;
+      x=Math.max(0,Math.min(rect.width,x));
+      return Math.floor(x/(rect.width/4));
+    }
     let dragging=false;
-    function angleFromEvent(e){
-      const rect=svg.getBoundingClientRect();
-      const cx=rect.left+rect.width/2;
-      const cy=rect.top+rect.height/2;
-      return Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI;
-    }
-    svg.addEventListener('pointerdown',e=>{
+    container.addEventListener('pointerdown',e=>{
       e.preventDefault();
       dragging=true;
-      startAngle=angleFromEvent(e)-rotation;
-      svg.setPointerCapture(e.pointerId);
+      container.setPointerCapture(e.pointerId);
+      setIndex(indexFromEvent(e));
     });
-    svg.addEventListener('pointermove',e=>{
+    container.addEventListener('pointermove',e=>{
       if(!dragging) return;
       e.preventDefault();
-      rotation=angleFromEvent(e)-startAngle;
-      svg.style.transform=`rotate(${base+rotation}deg)`;
+      setIndex(indexFromEvent(e));
     });
     function endDrag(e){
       if(!dragging) return;
-      svg.releasePointerCapture(e.pointerId);
+      container.releasePointerCapture(e.pointerId);
       dragging=false;
-      const rawIdx=Math.round((-rotation-45)/90);
-      rotation=-45-rawIdx*90;
-      update();
+      setIndex(indexFromEvent(e));
     }
-    svg.addEventListener('pointerup',endDrag);
-    svg.addEventListener('pointercancel',endDrag);
-    svg.addEventListener('pointerleave',endDrag);
-    wheelHandlers[inputId]=color=>{ rotation=-45-SYMBOLS.indexOf(color)*90; update(); };
+    container.addEventListener('pointerup',endDrag);
+    container.addEventListener('pointercancel',endDrag);
+    container.addEventListener('pointerleave',endDrag);
+    sliderHandlers[inputId]=color=>{ const i=SYMBOLS.indexOf(color); if(i>=0) setIndex(i); };
+    setIndex(SYMBOLS.indexOf(input.value)||0);
   }
 
-  function setWheelDisabled(inputId,disabled){
-    const wheel=document.querySelector(`.color-wheel[data-input="${inputId}"]`);
-    if(!wheel) return;
-    wheel.classList.toggle('disabled',disabled);
+  function setSliderDisabled(inputId,disabled){
+    const slider=document.querySelector(`.color-slider[data-input="${inputId}"]`);
+    if(!slider) return;
+    slider.classList.toggle('disabled',disabled);
   }
 
   function updateChart(snapshot) {
@@ -364,8 +352,8 @@ async function runGameLogic(){
   document.getElementById('mode').addEventListener('change', updateUIForMode);
   updateUIForMode();
   initLiveDashboard();
-  setupWheel('single-choice');
-  for(let i=1;i<=5;i++) setupWheel(`user-choice-${i}`);
+  setupSlider('single-choice');
+  for(let i=1;i<=5;i++) setupSlider(`user-choice-${i}`);
   initAnalysisDashboard();
 
   function resetIntuitionChoices(){
@@ -374,8 +362,8 @@ async function runGameLogic(){
     for(let i=1;i<=5;i++){
       const input=document.getElementById(`user-choice-${i}`);
       input.disabled=(i!==1);
-      setWheelDisabled(input.id,input.disabled);
-      if(wheelHandlers[input.id]) wheelHandlers[input.id]('Red');
+      setSliderDisabled(input.id,input.disabled);
+      if(sliderHandlers[input.id]) sliderHandlers[input.id]('Red');
     }
     document.getElementById('intuition-submit').disabled=false;
   }
@@ -388,12 +376,12 @@ async function runGameLogic(){
     const submitHash=await computeHash({timestamp: timestamp.toISOString(), mode:'intuition', userSymbol: guess, username});
     intuitionGuesses.push({guess,timestamp,submitHash});
     input.disabled=true;
-    setWheelDisabled(input.id,true);
+    setSliderDisabled(input.id,true);
     currentIntuitionIndex++;
     if(currentIntuitionIndex<=5){
       const nextInput=document.getElementById(`user-choice-${currentIntuitionIndex}`);
       nextInput.disabled=false;
-      setWheelDisabled(nextInput.id,false);
+      setSliderDisabled(nextInput.id,false);
     }else{
       document.getElementById('intuition-submit').disabled=true;
     }
