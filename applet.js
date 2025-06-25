@@ -427,7 +427,7 @@ async function runGameLogic(){
       if(e.userSymbol in total){
         total[e.userSymbol]++;
         if(e.match) data[e.userSymbol]++;
-        let ts='', rngTs='', tsHash='', rngTsHash='';
+        let ts='', rngTs='', tsHash='', rngTsHash='', rngDate=new Date(0);
         if(e.timestamp){
           const dt=e.timestamp.toDate?e.timestamp.toDate():new Date(e.timestamp);
           ts=dt.toISOString().replace('T',' ').split('.')[0];
@@ -437,10 +437,12 @@ async function runGameLogic(){
           const rdt=e.rngTimestamp.toDate?e.rngTimestamp.toDate():new Date(e.rngTimestamp);
           rngTs=rdt.toISOString().replace('T',' ').split('.')[0];
           rngTsHash=await computeHash(rngTs);
+          rngDate=rdt;
         }
-        rows.push([rngTs,e.username||'',e.mode,e.rng||'',e.userSymbol,ts,tsHash,e.actualSymbol,rngTs,rngTsHash,e.match,e.submitHash||'',e.rngHash||'']);
+        rows.push({rngDate,row:[rngTs,e.username||'',e.mode,e.rng||'',e.userSymbol,ts,tsHash,e.actualSymbol,rngTs,rngTsHash,e.match,e.submitHash||'',e.rngHash||'']});
       }
     }
+    rows.sort((a,b)=>a.rngDate-b.rngDate);
     const labels=SYMBOLS;
     const matches=labels.map(s=>data[s]);
     const attempts=labels.map(s=>total[s]);
@@ -457,8 +459,8 @@ async function runGameLogic(){
     });
     const exportUser=document.getElementById('username').value.trim() || 'unidentified';
     let csv='username,'+exportUser+'\n'+
-            'rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
-            rows.map(r=>r.join(',')).join('\n')+
+            'trialNumber,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
+            rows.map((r,i)=>[i+1,...r.row].join(',')).join('\n')+
             '\n\nSymbol,N,Matches,Rate%,CI,p-value,Power\n'+
             stats.map(x=>`${x.s},${x.n},${x.k},${x.rate},${x.ci},${x.pval},${x.power}`).join('\n');
     const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
