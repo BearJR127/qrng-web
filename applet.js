@@ -249,7 +249,12 @@ async function runGameLogic(){
   }
 
   function parseDateField(f){
-    return f ? (f.toDate ? f.toDate() : new Date(f)) : null;
+    if(!f) return null;
+    if(f.toDate) return f.toDate();
+    if(typeof f==='object' && typeof f.seconds==='number'){
+      return new Date(f.seconds*1000);
+    }
+    return new Date(f);
   }
 
   function computeStats(matches, attempts){
@@ -320,7 +325,12 @@ async function runGameLogic(){
       const snap=await getDocs(collection(db,'qrng_trials'));
       const remote=snap.docs.map(d=>d.data());
       for(const r of remote){
-        if(!allTrials.some(t=>t.hash===r.hash)) allTrials.push(r);
+        const rec={...r};
+        const ts=parseDateField(rec.timestamp);
+        const rngTs=parseDateField(rec.rngTimestamp);
+        if(ts) rec.timestamp=ts.toISOString();
+        if(rngTs) rec.rngTimestamp=rngTs.toISOString();
+        if(!allTrials.some(t=>t.hash===rec.hash)) allTrials.push(rec);
       }
       localStorage.setItem('qrng_trials',JSON.stringify(allTrials));
     }catch(e){
