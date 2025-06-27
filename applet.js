@@ -24,6 +24,7 @@ export function initGame(container){
         <option value="focus">Focus</option>
         <option value="guesser">Guesser</option>
         <option value="intuition">Intuition</option>
+        <option value="blackwhite">BlackWhite</option>
       </select>
     </div>
     <div>
@@ -75,6 +76,7 @@ export function initGame(container){
         <option value="focus">Focus</option>
         <option value="guesser">Guesser</option>
         <option value="intuition">Intuition</option>
+        <option value="blackwhite">BlackWhite</option>
       </select>
       <select id="filter-rng">
         <option value="">All RNG</option>
@@ -119,7 +121,10 @@ async function runGameLogic(){
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  const SYMBOLS = ['Red','Blue','Green','Yellow'];
+  const DEFAULT_SYMBOLS = ['Red','Blue','Green','Yellow'];
+  const BW_SYMBOLS = ['White','Black'];
+  const ALL_SYMBOLS = [...DEFAULT_SYMBOLS, ...BW_SYMBOLS];
+  let SYMBOLS = DEFAULT_SYMBOLS;
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
@@ -132,6 +137,10 @@ async function runGameLogic(){
   let nextRngTimestamp = null;
   let analysisChart = null;
   let allTrials = [];
+
+  function setSymbolsForMode(mode){
+    SYMBOLS = (mode==='blackwhite') ? BW_SYMBOLS : DEFAULT_SYMBOLS;
+  }
 
   function loadLocalTrials(){
     try{
@@ -154,36 +163,32 @@ async function runGameLogic(){
       console.error('Failed saving trial locally',e);
     }
   }
-  const sliderTemplate=`
-    <div class="color-slider-container">
-      <div class="color-slider-bar">
-        <div class="red" data-color="Red">R</div>
-        <div class="blue" data-color="Blue">B</div>
-        <div class="green" data-color="Green">G</div>
-        <div class="yellow" data-color="Yellow">Y</div>
-      </div>
-      <div class="slider-marker"></div>
-    </div>`;
+  function getSliderTemplate(symbols){
+    const classes={Red:'red',Blue:'blue',Green:'green',Yellow:'yellow',White:'white',Black:'black'};
+    const segs=symbols.map(s=>`<div class="${classes[s]}" data-color="${s}">${s[0]}</div>`).join('');
+    return `<div class="color-slider-container"><div class="color-slider-bar">${segs}</div><div class="slider-marker"></div></div>`;
+  }
   const sliderHandlers={};
 
   function setupSlider(inputId){
     const input=document.getElementById(inputId);
     const slider=document.querySelector(`.color-slider[data-input="${inputId}"]`);
     if(!slider) return;
-    slider.innerHTML=sliderTemplate;
+    slider.innerHTML=getSliderTemplate(SYMBOLS);
     const container=slider.querySelector('.color-slider-container');
     const marker=slider.querySelector('.slider-marker');
     function setIndex(idx){
-      idx=((idx%4)+4)%4;
+      const len=SYMBOLS.length;
+      idx=((idx%len)+len)%len;
       const color=SYMBOLS[idx];
       input.value=color;
-      marker.style.left=`${(idx+0.5)*25}%`;
+      marker.style.left=`${(idx+0.5)*(100/len)}%`;
     }
     function indexFromEvent(e){
       const rect=container.getBoundingClientRect();
       let x=e.clientX-rect.left;
       x=Math.max(0,Math.min(rect.width,x));
-      return Math.floor(x/(rect.width/4));
+      return Math.floor(x/(rect.width/SYMBOLS.length));
     }
     let dragging=false;
     container.addEventListener('pointerdown',e=>{
@@ -217,8 +222,8 @@ async function runGameLogic(){
   }
 
   function updateChart(snapshot) {
-    const data = {Red:0,Blue:0,Green:0,Yellow:0},
-          total = {Red:0,Blue:0,Green:0,Yellow:0};
+    const data={}, total={};
+    ALL_SYMBOLS.forEach(s=>{data[s]=0; total[s]=0;});
     snapshot.forEach(d => {
       const e = d.data();
       if(e.userSymbol in total){
@@ -226,19 +231,19 @@ async function runGameLogic(){
         if(e.match) data[e.userSymbol]++;
       }
     });
-    const labels = SYMBOLS.slice(),
+    const labels = ALL_SYMBOLS.slice(),
           matches = labels.map(s=>data[s]),
           attempts = labels.map(s=>total[s]);
     const allMatches = matches.reduce((a,b)=>a+b,0);
     const allAttempts = attempts.reduce((a,b)=>a+b,0);
     labels.push('All');
-    const datasetData = SYMBOLS.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0);
+    const datasetData = matches.map((m,i)=>attempts[i]?((m/attempts[i])*100):0);
     datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
     if(chartInstance) chartInstance.destroy();
     const ctxc = document.getElementById('chart').getContext('2d');
     chartInstance = new Chart(ctxc, {
       type:'bar',
-      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','gray'] }]},
+      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','#ccc','black','gray'] }]},
       options:{ scales:{ y:{ beginAtZero:true, max:100 } } }
     });
     document.getElementById('dashboard-stats').innerText = `Matched: ${allMatches}\nTrials: ${allAttempts}`;
@@ -257,9 +262,10 @@ async function runGameLogic(){
     return new Date(f);
   }
 
-  function computeStats(matches, attempts){
-    const p0=1/4, z=jStat.normal.inv(0.975,0,1);
-    const stats=SYMBOLS.map((s,i)=>{
+  function computeStats(matches, attempts, symbols){
+    const syms=symbols||SYMBOLS;
+    const p0=1/syms.length, z=jStat.normal.inv(0.975,0,1);
+    const stats=syms.map((s,i)=>{
       const n=attempts[i], k=matches[i];
       const rate=n?((k/n)*100).toFixed(1):0;
       const se0=Math.sqrt(p0*(1-p0)/n), delta=(k/n)-p0, mu=delta/se0;
@@ -299,22 +305,23 @@ async function runGameLogic(){
       if(user && normalizedUser!=='all' && (e.username||'')!==user) return false;
       return true;
     });
-    const data={Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0};
+    const data={}, total={};
+    ALL_SYMBOLS.forEach(s=>{data[s]=0; total[s]=0;});
     filtered.forEach(e=>{
       if(e.userSymbol in total){
         total[e.userSymbol]++;
         if(e.match) data[e.userSymbol]++;
       }
     });
-    const labels=SYMBOLS.slice(), matches=labels.map(s=>data[s]), attempts=labels.map(s=>total[s]);
+    const labels=ALL_SYMBOLS.slice(), matches=labels.map(s=>data[s]), attempts=labels.map(s=>total[s]);
     const allMatches=matches.reduce((a,b)=>a+b,0), allAttempts=attempts.reduce((a,b)=>a+b,0);
     labels.push('All');
-    const datasetData=SYMBOLS.map((_,i)=>attempts[i]?((matches[i]/attempts[i])*100):0);
+    const datasetData=matches.map((m,i)=>attempts[i]?((m/attempts[i])*100):0);
     datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
     if(analysisChart) analysisChart.destroy();
     const ctxa=document.getElementById('analysis-chart').getContext('2d');
-    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','gray']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
-    const stats=computeStats(matches,attempts);
+    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','#ccc','black','gray']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
+    const stats=computeStats(matches,attempts,ALL_SYMBOLS);
     document.getElementById('analysis-stats').innerHTML=stats.map(s=>`${s.s}: ${s.k}/${s.n} (${s.rate}% ${s.ci}, p=${s.pval}, power=${s.power})`).join('<br>') || 'No data';
   }
 
@@ -355,14 +362,15 @@ async function runGameLogic(){
     document.getElementById('single-choice-container').style.display = m==='intuition'?'none':'block';
     document.getElementById('intuition-inputs').style.display = m==='intuition'?'block':'none';
     document.getElementById('intuition-submit').style.display = m==='intuition'?'inline-block':'none';
+    setSymbolsForMode(m);
+    setupSlider('single-choice');
     if(m==='intuition') resetIntuitionChoices();
-    if(m==='guesser') prepareNextRng();
+    if(m==='guesser' || m==='blackwhite') prepareNextRng();
   }
 
   document.getElementById('mode').addEventListener('change', updateUIForMode);
   updateUIForMode();
   initLiveDashboard();
-  setupSlider('single-choice');
   for(let i=1;i<=5;i++) setupSlider(`user-choice-${i}`);
   initAnalysisDashboard();
 
@@ -428,8 +436,9 @@ async function runGameLogic(){
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
     const raw=extractRawBits(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);
     const vn=vonNeumann(raw);
-    if(vn.length<2) return null;
-    return SYMBOLS[parseInt(vn.slice(0,2).join(''),2)];
+    const bitsNeeded=SYMBOLS.length===2?1:2;
+    if(vn.length<bitsNeeded) return null;
+    return SYMBOLS[parseInt(vn.slice(0,bitsNeeded).join(''),2)%SYMBOLS.length];
   }
 
   function getSymbolFromEvent(){
@@ -544,7 +553,7 @@ async function runGameLogic(){
     }
 
     let guess, actual, rngTimestamp;
-    if(mode==='guesser'){
+    if(mode==='guesser' || mode==='blackwhite'){
       guess=document.getElementById('single-choice').value;
       actual=nextActual;
       rngTimestamp=nextRngTimestamp;
@@ -574,15 +583,17 @@ async function runGameLogic(){
     record.hash=hash;
     saveTrialLocal(record);
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
-    if(mode==='guesser') prepareNextRng();
+    if(mode==='guesser' || mode==='blackwhite') prepareNextRng();
   }
   window.runTrial=runTrial;
 
   async function exportCSV(){
-    const promptResult=prompt('Filter (focus, guesser, intuition) or leave blank:');
+    const promptResult=prompt('Filter (focus, guesser, intuition, blackwhite) or leave blank:');
     const modeFilter=(promptResult===null?'':promptResult).toLowerCase();
     const snap=await getDocs(collection(db,'qrng_trials'));
-    const data={Red:0,Blue:0,Green:0,Yellow:0}, total={Red:0,Blue:0,Green:0,Yellow:0}, rows=[];
+    const symbols=(modeFilter==='blackwhite')?BW_SYMBOLS:DEFAULT_SYMBOLS;
+    const data={}, total={}, rows=[];
+    symbols.forEach(s=>{data[s]=0; total[s]=0;});
     for(const d of snap.docs){
       const e=d.data();
       if(modeFilter && e.mode!==modeFilter) continue;
@@ -605,29 +616,10 @@ async function runGameLogic(){
       }
     }
     rows.sort((a,b)=>a.rngDate-b.rngDate);
-    const labels=SYMBOLS;
+    const labels=symbols;
     const matches=labels.map(s=>data[s]);
     const attempts=labels.map(s=>total[s]);
-    const p0=1/4, z=jStat.normal.inv(0.975,0,1);
-    const stats=labels.map((s,i)=>{
-      const n=attempts[i], k=matches[i];
-      const rate=n?((k/n)*100).toFixed(1):0;
-      const se0=Math.sqrt(p0*(1-p0)/n), delta=(k/n)-p0, mu=delta/se0;
-      const power=n?((jStat.normal.cdf(-z-mu)+1-jStat.normal.cdf(z-mu)).toFixed(3)):0;
-      const chi=((k-n*p0)**2/(n*p0) + ((n-k)-n*(1-p0))**2/(n*(1-p0)));
-      const pval=n?(1-jStat.chisquare.cdf(chi,1)).toFixed(5):0;
-      const ci=n?`±${(z*Math.sqrt((k/n)*(1-k/n)/n)*100).toFixed(1)}`:'±0';
-      return {s,n,k,rate,pval,power,ci};
-    });
-    const allN=attempts.reduce((a,b)=>a+b,0);
-    const allK=matches.reduce((a,b)=>a+b,0);
-    const allRate=allN?((allK/allN)*100).toFixed(1):0;
-    const seAll=Math.sqrt(p0*(1-p0)/allN), deltaAll=(allK/allN)-p0, muAll=deltaAll/seAll;
-    const powerAll=allN?((jStat.normal.cdf(-z-muAll)+1-jStat.normal.cdf(z-muAll)).toFixed(3)):0;
-    const chiAll=allN?((allK-allN*p0)**2/(allN*p0) + ((allN-allK)-allN*(1-p0))**2/(allN*(1-p0))):0;
-    const pvalAll=allN?(1-jStat.chisquare.cdf(chiAll,1)).toFixed(5):0;
-    const ciAll=allN?`±${(z*Math.sqrt((allK/allN)*(1-allK/allN)/allN)*100).toFixed(1)}`:'±0';
-    stats.push({s:'All',n:allN,k:allK,rate:allRate,pval:pvalAll,power:powerAll,ci:ciAll});
+    const stats=computeStats(matches,attempts,labels);
     const exportUser=document.getElementById('username').value.trim() || defaultUsername;
     let csv='username,'+exportUser+'\n'+
             'trialNumber,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
