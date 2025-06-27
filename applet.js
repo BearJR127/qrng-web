@@ -122,7 +122,7 @@ async function runGameLogic(){
   const db = getFirestore(app);
 
   const DEFAULT_SYMBOLS = ['Red','Blue','Green','Yellow'];
-  const BW_SYMBOLS = ['White','Black'];
+  const BW_SYMBOLS = ['Black','White'];
   const ALL_SYMBOLS = [...DEFAULT_SYMBOLS, ...BW_SYMBOLS];
   let SYMBOLS = DEFAULT_SYMBOLS;
   const video = document.getElementById('video');
