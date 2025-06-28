@@ -315,15 +315,23 @@ async function runGameLogic(){
       }
     });
     const labels=ALL_SYMBOLS.slice(), matches=labels.map(s=>data[s]), attempts=labels.map(s=>total[s]);
-    const allMatches=matches.reduce((a,b)=>a+b,0), allAttempts=attempts.reduce((a,b)=>a+b,0);
-    labels.push('All');
+    const rbgyMatches=matches.slice(0,4).reduce((a,b)=>a+b,0);
+    const rbgyAttempts=attempts.slice(0,4).reduce((a,b)=>a+b,0);
+    const bwMatches=matches.slice(4).reduce((a,b)=>a+b,0);
+    const bwAttempts=attempts.slice(4).reduce((a,b)=>a+b,0);
+    labels.push('All RBGY','All BW');
     const datasetData=matches.map((m,i)=>attempts[i]?((m/attempts[i])*100):0);
-    datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
+    datasetData.push(rbgyAttempts?((rbgyMatches/rbgyAttempts)*100):0);
+    datasetData.push(bwAttempts?((bwMatches/bwAttempts)*100):0);
     if(analysisChart) analysisChart.destroy();
     const ctxa=document.getElementById('analysis-chart').getContext('2d');
-    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','#ccc','black','gray']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
-    const stats=computeStats(matches,attempts,ALL_SYMBOLS);
-    document.getElementById('analysis-stats').innerHTML=stats.map(s=>`${s.s}: ${s.k}/${s.n} (${s.rate}% ${s.ci}, p=${s.pval}, power=${s.power})`).join('<br>') || 'No data';
+    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','#ccc','black','#888','#444']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
+    const baseStats=computeStats(matches,attempts,ALL_SYMBOLS).slice(0,ALL_SYMBOLS.length);
+    const rbgyStats=computeStats(matches.slice(0,4),attempts.slice(0,4),DEFAULT_SYMBOLS).pop();
+    const bwStats=computeStats(matches.slice(4),attempts.slice(4),BW_SYMBOLS).pop();
+    baseStats.push({...rbgyStats,s:'All RBGY'});
+    baseStats.push({...bwStats,s:'All BW'});
+    document.getElementById('analysis-stats').innerHTML=baseStats.map(s=>`${s.s}: ${s.k}/${s.n} (${s.rate}% ${s.ci}, p=${s.pval}, power=${s.power})`).join('<br>') || 'No data';
   }
 
   async function loadAllTrials(){
