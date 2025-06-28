@@ -366,7 +366,7 @@ async function runGameLogic(){
     setSymbolsForMode(m);
     setupSlider('single-choice');
     if(m==='intuition') resetIntuitionChoices();
-    if(m==='guesser' || m==='blackwhite') ensureNextRng();
+    if(m==='guesser') ensureNextRng();
   }
 
   document.getElementById('mode').addEventListener('change', updateUIForMode);
@@ -411,7 +411,7 @@ async function runGameLogic(){
     .then(stream => {
       video.srcObject = stream;
       video.addEventListener('playing', () => {
-        if(['guesser','blackwhite'].includes(document.getElementById('mode').value)) {
+        if(document.getElementById('mode').value==='guesser') {
           ensureNextRng();
         }
       }, { once: true });
@@ -575,7 +575,7 @@ async function runGameLogic(){
     }
 
     let guess, actual, rngTimestamp;
-    if(mode==='guesser' || mode==='blackwhite'){
+    if(mode==='guesser'){
       guess=document.getElementById('single-choice').value;
       actual=nextActual;
       rngTimestamp=nextRngTimestamp;
@@ -606,7 +606,7 @@ async function runGameLogic(){
     record.hash=hash;
     saveTrialLocal(record);
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
-    if(mode==='guesser' || mode==='blackwhite') prepareNextRng();
+    if(mode==='guesser') prepareNextRng();
   }
   window.runTrial=runTrial;
 
