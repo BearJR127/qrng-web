@@ -135,6 +135,7 @@ async function runGameLogic(){
   let focusRunning = false;
   let nextActual = null;
   let nextRngTimestamp = null;
+  let prepareInterval = null;
   let analysisChart = null;
   let allTrials = [];
 
@@ -365,7 +366,7 @@ async function runGameLogic(){
     setSymbolsForMode(m);
     setupSlider('single-choice');
     if(m==='intuition') resetIntuitionChoices();
-    if(m==='guesser' || m==='blackwhite') prepareNextRng();
+    if(m==='guesser' || m==='blackwhite') ensureNextRng();
   }
 
   document.getElementById('mode').addEventListener('change', updateUIForMode);
@@ -407,7 +408,14 @@ async function runGameLogic(){
   window.submitIntuitionChoice = submitIntuitionChoice;
 
   navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => { video.srcObject = stream; })
+    .then(stream => {
+      video.srcObject = stream;
+      video.addEventListener('playing', () => {
+        if(['guesser','blackwhite'].includes(document.getElementById('mode').value)) {
+          ensureNextRng();
+        }
+      }, { once: true });
+    })
     .catch(err => { document.getElementById('result').innerText = 'Webcam access denied.'; });
 
   function extractRawBits(data,w,h){
@@ -456,6 +464,20 @@ async function runGameLogic(){
   function prepareNextRng(){
     nextActual=getSymbol();
     nextRngTimestamp=new Date();
+  }
+
+  function ensureNextRng(){
+    if(prepareInterval) clearInterval(prepareInterval);
+    prepareNextRng();
+    if(!nextActual){
+      prepareInterval=setInterval(()=>{
+        prepareNextRng();
+        if(nextActual){
+          clearInterval(prepareInterval);
+          prepareInterval=null;
+        }
+      },500);
+    }
   }
 
   async function computeHash(obj){
@@ -558,7 +580,8 @@ async function runGameLogic(){
       actual=nextActual;
       rngTimestamp=nextRngTimestamp;
       if(!actual){
-        document.getElementById('result').innerText='Not prepared yet — please wait and try again.';
+        document.getElementById('result').innerText='Not prepared yet — preparing random value...';
+        ensureNextRng();
         return;
       }
     }else{
