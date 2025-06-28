@@ -133,6 +133,8 @@ async function runGameLogic(){
   let currentIntuitionIndex = 1;
   let chartInstance = null;
   let focusRunning = false;
+  let focusTrialCount = 0;
+  const MAX_FOCUS_TRIALS = 500;
   let nextActual = null;
   let nextRngTimestamp = null;
   let prepareInterval = null;
@@ -517,10 +519,17 @@ async function runGameLogic(){
 
   function startFocusLoop(username){
     focusRunning=true;
+    focusTrialCount=0;
     document.getElementById('trial-button').innerText='Stop Trial';
     const loop=async()=>{
       if(!focusRunning) return;
       await singleFocusTrial(username);
+      focusTrialCount++;
+      if(focusTrialCount>=MAX_FOCUS_TRIALS){
+        stopFocusLoop();
+        document.getElementById('result').innerText=`Focus mode automatically stopped after ${MAX_FOCUS_TRIALS} trials.`;
+        return;
+      }
       setTimeout(loop,200);
     };
     loop();
