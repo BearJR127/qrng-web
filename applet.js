@@ -237,16 +237,21 @@ async function runGameLogic(){
     const labels = ALL_SYMBOLS.slice(),
           matches = labels.map(s=>data[s]),
           attempts = labels.map(s=>total[s]);
+    const rbgyMatches = matches.slice(0,4).reduce((a,b)=>a+b,0);
+    const rbgyAttempts = attempts.slice(0,4).reduce((a,b)=>a+b,0);
+    const bwMatches = matches.slice(4).reduce((a,b)=>a+b,0);
+    const bwAttempts = attempts.slice(4).reduce((a,b)=>a+b,0);
     const allMatches = matches.reduce((a,b)=>a+b,0);
     const allAttempts = attempts.reduce((a,b)=>a+b,0);
-    labels.push('All');
+    labels.push('All RBGY','All BW');
     const datasetData = matches.map((m,i)=>attempts[i]?((m/attempts[i])*100):0);
-    datasetData.push(allAttempts?((allMatches/allAttempts)*100):0);
+    datasetData.push(rbgyAttempts?((rbgyMatches/rbgyAttempts)*100):0);
+    datasetData.push(bwAttempts?((bwMatches/bwAttempts)*100):0);
     if(chartInstance) chartInstance.destroy();
     const ctxc = document.getElementById('chart').getContext('2d');
     chartInstance = new Chart(ctxc, {
       type:'bar',
-      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','#ccc','black','gray'] }]},
+      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','#ccc','black','#888','#444'] }]},
       options:{ scales:{ y:{ beginAtZero:true, max:100 } } }
     });
     document.getElementById('dashboard-stats').innerText = `Matched: ${allMatches}\nTrials: ${allAttempts}`;
@@ -631,7 +636,7 @@ async function runGameLogic(){
     const promptResult=prompt('Filter (focus, guesser, intuition, blackwhite) or leave blank:');
     const modeFilter=(promptResult===null?'':promptResult).toLowerCase();
     const snap=await getDocs(collection(db,'qrng_trials'));
-    const symbols=(modeFilter==='blackwhite')?BW_SYMBOLS:DEFAULT_SYMBOLS;
+    const symbols=ALL_SYMBOLS;
     const data={}, total={}, rows=[];
     symbols.forEach(s=>{data[s]=0; total[s]=0;});
     for(const d of snap.docs){
@@ -656,10 +661,16 @@ async function runGameLogic(){
       }
     }
     rows.sort((a,b)=>a.rngDate-b.rngDate);
-    const labels=symbols;
+    const labels=symbols.slice();
     const matches=labels.map(s=>data[s]);
     const attempts=labels.map(s=>total[s]);
-    const stats=computeStats(matches,attempts,labels);
+    const rbgyStats=computeStats(matches.slice(0,4),attempts.slice(0,4),DEFAULT_SYMBOLS).pop();
+    const bwStats=computeStats(matches.slice(4),attempts.slice(4),BW_SYMBOLS).pop();
+    const overall=computeStats(matches,attempts,labels).pop();
+    let stats=computeStats(matches,attempts,labels).slice(0,labels.length);
+    stats.push({...rbgyStats,s:'All RBGY'});
+    stats.push({...bwStats,s:'All BW'});
+    stats.push(overall);
     const exportUser=document.getElementById('username').value.trim() || defaultUsername;
     let csv='username,'+exportUser+'\n'+
             'trialNumber,rngTimestamp,username,mode,RNG,userSymbol,userTimestamp,userTimestampHash,actualSymbol,actualTimestamp,actualTimestampHash,match,submitHash,rngHash\n'+
