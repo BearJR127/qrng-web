@@ -246,7 +246,7 @@ async function runGameLogic(){
     const ctxc = document.getElementById('chart').getContext('2d');
     chartInstance = new Chart(ctxc, {
       type:'bar',
-      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','#ccc','black','gray'] }]},
+      data:{ labels, datasets:[{ label:'Match %', data:datasetData, backgroundColor:['red','blue','green','yellow','black','#ccc','gray'] }]},
       options:{ scales:{ y:{ beginAtZero:true, max:100 } } }
     });
     document.getElementById('dashboard-stats').innerText = `Matched: ${allMatches}\nTrials: ${allAttempts}`;
@@ -327,7 +327,7 @@ async function runGameLogic(){
     datasetData.push(bwAttempts?((bwMatches/bwAttempts)*100):0);
     if(analysisChart) analysisChart.destroy();
     const ctxa=document.getElementById('analysis-chart').getContext('2d');
-    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','#ccc','black','#888','#444']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
+    analysisChart=new Chart(ctxa,{type:'bar',data:{labels,datasets:[{label:'Match %',data:datasetData,backgroundColor:['red','blue','green','yellow','black','#ccc','#888','#444']}]},options:{scales:{y:{beginAtZero:true,max:100}}}});
     const baseStats=computeStats(matches,attempts,ALL_SYMBOLS).slice(0,ALL_SYMBOLS.length);
     const rbgyStats=computeStats(matches.slice(0,4),attempts.slice(0,4),DEFAULT_SYMBOLS).pop();
     const bwStats=computeStats(matches.slice(4),attempts.slice(4),BW_SYMBOLS).pop();
