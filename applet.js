@@ -141,6 +141,24 @@ async function runGameLogic(){
   let prepareInterval = null;
   let analysisChart = null;
   let allTrials = [];
+  let audioCtx = null;
+
+  function playTone(duration = 200, frequency = 440, volume = 0.5){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = frequency;
+      osc.type = 'sine';
+      gain.gain.value = volume;
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration/1000);
+    }catch(e){
+      console.error('Failed to play tone', e);
+    }
+  }
 
   function setSymbolsForMode(mode){
     SYMBOLS = (mode==='blackwhite') ? BW_SYMBOLS : DEFAULT_SYMBOLS;
@@ -618,6 +636,7 @@ async function runGameLogic(){
     }
     const rng=document.getElementById('rng').value==='event'?'Software':'Camera';
     const match=(actual===guess);
+    if(match && (mode=="guesser" || mode=="blackwhite")) playTone();
     document.getElementById('result').innerHTML=
       `Your guess: <b>${guess}</b><br>`+
       `Actual: <b>${actual}</b><br>`+
