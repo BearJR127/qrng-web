@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow reads from qrng_trials by anyone
+    match /qrng_trials/{trialId} {
+      allow read: if true;
+      allow create: if isValidTrial(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // Block access to other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+function isValidTrial(data) {
+  return data.timestamp is timestamp &&
+         data.mode is string &&
+         data.rng is string &&
+         data.userSymbol is string &&
+         data.actualSymbol is string &&
+         data.match is bool &&
+         data.username is string &&
+         data.hash is string;
+}
