@@ -15,13 +15,17 @@ service cloud.firestore {
   }
 }
 
+function isValidMode(m) {
+  return m in ['focus','guesser','intuition','blackwhite'];
+}
+
 function isValidTrial(data) {
   return data.timestamp is timestamp &&
-         data.mode is string &&
+         data.mode is string && isValidMode(data.mode) &&
          data.rng is string &&
          data.userSymbol is string &&
          data.actualSymbol is string &&
          data.match is bool &&
-         data.username is string &&
+         data.username is string && data.username.size() <= 30 &&
          data.hash is string;
 }
