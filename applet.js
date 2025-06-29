@@ -441,19 +441,29 @@ async function runGameLogic(){
   }
   window.submitIntuitionChoice = submitIntuitionChoice;
 
-  const rngSelect=document.getElementById('rng');
-  const liveContainer=document.getElementById('live-container');
-  if(rngSelect && rngSelect.value==='camera' && liveContainer && liveContainer.offsetParent!==null && navigator.mediaDevices?.getUserMedia){
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-        video.addEventListener('playing', () => {
-          if(document.getElementById('mode').value==='guesser') {
-            ensureNextRng();
-          }
-        }, { once: true });
-      })
-      .catch(err => { document.getElementById('result').innerText = 'Webcam access denied.'; });
+  let cameraStream = null;
+  async function startCamera(){
+    if(cameraStream || !navigator.mediaDevices?.getUserMedia) return cameraStream;
+    try{
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = cameraStream;
+      await new Promise(res => video.addEventListener('playing', res, { once: true }));
+      if(document.getElementById('mode').value==='guesser' && !nextActual){
+        ensureNextRng();
+      }
+    }catch(err){
+      document.getElementById('result').innerText = 'Webcam access denied.';
+      cameraStream = null;
+    }
+    return cameraStream;
+  }
+
+  function stopCamera(){
+    if(cameraStream){
+      cameraStream.getTracks().forEach(t=>t.stop());
+      cameraStream = null;
+      video.srcObject = null;
+    }
   }
 
   function extractRawBits(data,w,h){
@@ -545,7 +555,10 @@ async function runGameLogic(){
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
   }
 
-  function startFocusLoop(username){
+  async function startFocusLoop(username){
+    if(document.getElementById('rng').value==='camera'){
+      await startCamera();
+    }
     focusRunning=true;
     focusTrialCount=0;
     document.getElementById('trial-button').innerText='Stop Trial';
@@ -566,17 +579,19 @@ async function runGameLogic(){
   function stopFocusLoop(){
     focusRunning=false;
     document.getElementById('trial-button').innerText='Start Trial';
+    stopCamera();
   }
 
   async function runTrial(){
     const submitTimestamp=new Date();
     const mode=document.getElementById('mode').value;
     const username=document.getElementById('username').value.trim() || defaultUsername;
+    const rngMode=document.getElementById('rng').value;
     if(mode==='focus'){
       if(focusRunning){
         stopFocusLoop();
       }else{
-        startFocusLoop(username);
+        await startFocusLoop(username);
       }
       return;
     }
@@ -585,6 +600,11 @@ async function runGameLogic(){
         document.getElementById('result').innerText='Please submit all 5 choices first.';
         return;
       }
+    }
+    if(rngMode==='camera'){
+      await startCamera();
+    }
+    if(mode==='intuition'){
       const results=[];
       for(const g of intuitionGuesses){
         const actual=getSymbol();
@@ -671,6 +691,7 @@ async function runGameLogic(){
     saveTrialLocal(record);
     addDoc(collection(db,'qrng_trials'),record).catch(e=>console.error(e));
     if(mode==='guesser') prepareNextRng();
+    if(rngMode==='camera') stopCamera();
   }
   window.runTrial=runTrial;
 
