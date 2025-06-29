@@ -1,0 +1,34 @@
+export async function initLeaderboard(root){
+  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js');
+  const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQgVavR044F95yG6ETansdwJzer097nqo",
+    authDomain: "colorguesser-50a43.firebaseapp.com",
+    projectId: "colorguesser-50a43",
+    storageBucket: "colorguesser-50a43.firebasestorage.app",
+    messagingSenderId: "154711693442",
+    appId: "1:154711693442:web:064528ee7d86b7e64dbc9b",
+    measurementId: "G-VC3V8WYD0K",
+    databaseURL: "https://colorguesser-50a43-default-rtdb.firebaseio.com/"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const snap = await getDocs(collection(db,'qrng_trials'));
+  const stats = {};
+  snap.forEach(d => {
+    const e = d.data();
+    const u = (e.username || '').trim();
+    if(!u) return;
+    if(!stats[u]) stats[u] = {matches:0,trials:0};
+    if(e.match) stats[u].matches++;
+    stats[u].trials++;
+  });
+  const entries = Object.entries(stats).map(([user,s]) => ({user, rate:s.trials? s.matches/s.trials:0, trials:s.trials}));
+  entries.sort((a,b)=> b.rate - a.rate || b.trials - a.trials);
+  const top = entries.slice(0,50);
+  root.innerHTML = '<h1>User Leaderboard</h1>'+
+    '<ol>' + top.map(e=>`<li>${e.user} - ${(e.rate*100).toFixed(1)}% (${e.trials})</li>`).join('') + '</ol>';
+}
+
+const container = document.getElementById('leaderboard-root');
+if(container) initLeaderboard(container);
