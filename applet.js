@@ -401,7 +401,12 @@ async function runGameLogic(){
     setupSlider('single-choice');
     if(m==='intuition') resetIntuitionChoices();
     if(m==='guesser') {
-      startCamera().then(ok=>{ if(ok) ensureNextRng(); });
+      const rng=document.getElementById('rng').value;
+      if(rng==='camera') {
+        startCamera().then(ok=>{ if(ok) ensureNextRng(); });
+      } else {
+        ensureNextRng();
+      }
     } else {
       stopCamera();
     }
