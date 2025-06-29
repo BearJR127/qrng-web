@@ -56,6 +56,7 @@ export async function initLeaderboard(root){
   let sortKey = 'rate';
   let sortDir = 'desc';
   const modeFilter = document.getElementById('mode-filter');
+  const sortSelect = document.getElementById('sort-select');
   const tableBody = document.querySelector('#leaderboard-table tbody');
   const headers = document.querySelectorAll('#leaderboard-table th');
 
@@ -82,10 +83,20 @@ export async function initLeaderboard(root){
     }else{
       sortKey = key;
       sortDir = key==='user' || key==='mode' ? 'asc' : 'desc';
+      if(sortSelect) sortSelect.value = key;
     }
     render();
   }));
   modeFilter.addEventListener('change',render);
+  if(sortSelect){
+    sortKey = sortSelect.value || 'rate';
+    sortDir = sortKey==='user' || sortKey==='mode' ? 'asc' : 'desc';
+    sortSelect.addEventListener('change',()=>{
+      sortKey = sortSelect.value;
+      sortDir = sortKey==='user' || sortKey==='mode' ? 'asc' : 'desc';
+      render();
+    });
+  }
   render();
 }
 
