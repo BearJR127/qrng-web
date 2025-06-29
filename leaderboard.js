@@ -60,6 +60,12 @@ export async function initLeaderboard(root){
   const tableBody = document.querySelector('#leaderboard-table tbody');
   const headers = document.querySelectorAll('#leaderboard-table th');
 
+  function escapeHTML(str){
+    return str.replace(/[&<>"']/g, c=>({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]);
+    });
+  }
+
   function render(){
     let data = entries.slice();
     const filter = modeFilter.value;
@@ -70,9 +76,12 @@ export async function initLeaderboard(root){
       if(sortKey==='trials') return sortDir==='asc'? a.trials - b.trials : b.trials - a.trials;
       return sortDir==='asc'? a.rate - b.rate : b.rate - a.rate;
     });
-    tableBody.innerHTML = data.map(e=>`<tr><td>${e.user}</td><td>${e.mode}</td><td>${(e.rate*100).toFixed(1)}</td><td>${e.trials}</td></tr>`).join('');
+    tableBody.innerHTML = data.map(e=>
+      `<tr><td>${escapeHTML(e.user)}</td><td>${escapeHTML(e.mode)}</td><td>${(e.rate*100).toFixed(1)}</td><td>${e.trials}</td></tr>`
+    ).join('');
     if(!data.length){
-      tableBody.innerHTML = `<tr><td colspan="4">${loadError || 'No leaderboard data available.'}</td></tr>`;
+      const msg = loadError ? escapeHTML(loadError) : 'No leaderboard data available.';
+      tableBody.innerHTML = `<tr><td colspan="4">${msg}</td></tr>`;
     }
   }
 
