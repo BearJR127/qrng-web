@@ -28,6 +28,11 @@
     #menu-items { display:none; list-style:none; padding:5px; margin:0; background:#fff; border:1px solid #ccc; }
     #menu.expanded #menu-items { display:block; }
     #menu-items li { margin:5px 0; }
+    #leaderboard-controls { margin-bottom: 15px; }
+    #leaderboard-table { margin: 0 auto; border-collapse: collapse; }
+    #leaderboard-table th, #leaderboard-table td { padding: 6px 10px; border: 1px solid #ccc; }
+    #leaderboard-table th { background:#eee; cursor:pointer; }
+    #leaderboard-table tbody tr:nth-child(odd){ background:#fafafa; }
   </style>
 </head>
 <body>
@@ -39,7 +44,30 @@
       <li><a href="leaderboard.html">Leaderboard</a></li>
     </ul>
   </nav>
-  <div id="leaderboard-root">Loading...</div>
+  <h1>User Leaderboard</h1>
+  <div id="leaderboard-controls">
+    <label for="mode-filter">Game Mode:</label>
+    <select id="mode-filter">
+      <option value="">All Modes</option>
+      <option value="focus">Focus</option>
+      <option value="guesser">Guesser</option>
+      <option value="intuition">Intuition</option>
+      <option value="blackwhite">BlackWhite</option>
+    </select>
+  </div>
+  <div id="leaderboard-root">
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th data-sort="user">User</th>
+          <th data-sort="mode">Mode</th>
+          <th data-sort="rate">Rate %</th>
+          <th data-sort="trials">Trials</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
   <script type="module" src="leaderboard.js"></script>
   <script>
     document.getElementById('menu-toggle').addEventListener('click', () => {
