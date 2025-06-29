@@ -604,13 +604,21 @@ async function runGameLogic(){
       let matchCount=0;
       results.forEach((r,i)=>{
         if(r.match) matchCount++;
-        summary+=`Guess ${i+1}: <b>${r.guess}</b> | Actual: <b>${r.actual}</b> - <span class='${r.match?'match':'no-match'}'>${r.match?'✔':'✘'}</span><br>`;
+        summary+=`Guess ${i+1}: <b>${r.guess}</b> | Actual: <b>${r.actual}</b> - <span class='${r.match?'match':'no-match'}'>${r.match?'✔ Match!':'✘ No match'}</span><br>`;
       });
       intuitionStats.round++;
       intuitionStats.totalMatches+=matchCount;
       intuitionStats.totalTrials+=5;
       summary+=`<b>Round ${intuitionStats.round}: ${matchCount}/5 correct</b><br>`;
       document.getElementById('result').innerHTML=summary;
+      if(matchCount>0){
+        const spans=document.querySelectorAll('#result .match');
+        spans.forEach(span=>{
+          span.classList.add('shake');
+          setTimeout(()=>span.classList.remove('shake'),3000);
+        });
+        if(navigator.vibrate) navigator.vibrate(3000);
+      }
       resetIntuitionChoices();
       return;
     }
@@ -641,8 +649,15 @@ async function runGameLogic(){
       `Your guess: <b>${guess}</b><br>`+
       `Actual: <b>${actual}</b><br>`+
       `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
-    if(match && (mode==='guesser' || mode==='blackwhite') && navigator.vibrate){
-      navigator.vibrate(200);
+    if(match && (mode==='guesser' || mode==='blackwhite' || mode==='intuition') && navigator.vibrate){
+      navigator.vibrate(3000);
+    }
+    if(match && (mode==='guesser' || mode==='blackwhite' || mode==='intuition')){
+      const span=document.querySelector('#result .match');
+      if(span){
+        span.classList.add('shake');
+        setTimeout(()=>span.classList.remove('shake'),3000);
+      }
     }
     const record={timestamp:submitTimestamp,rngTimestamp,mode,rng,userSymbol:guess,actualSymbol:actual,match,username};
     const rngHash=await computeHash({timestamp:rngTimestamp.toISOString(),mode,rng,actualSymbol:actual});
