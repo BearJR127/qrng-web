@@ -29,7 +29,6 @@
     #menu.expanded #menu-items { display:block; }
     #menu-items li { margin:5px 0; }
   </style>
-  <script type="module" src="leaderboard.js"></script>
 </head>
 <body>
   <nav id="menu">
@@ -41,6 +40,7 @@
     </ul>
   </nav>
   <div id="leaderboard-root">Loading...</div>
+  <script type="module" src="leaderboard.js"></script>
   <script>
     document.getElementById('menu-toggle').addEventListener('click', () => {
       document.getElementById('menu').classList.toggle('expanded');
