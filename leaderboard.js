@@ -18,6 +18,13 @@ export async function initLeaderboard(root){
     const db = getFirestore(app);
     const snap = await getDocs(collection(db,'qrng_trials'));
     records = snap.docs.map(d=>d.data());
+    if(!records.length){
+      const local = JSON.parse(localStorage.getItem('qrng_trials') || '[]');
+      if(local.length){
+        records = local;
+        loadError = 'Remote database had no data, using local results.';
+      }
+    }
   }catch(e){
     loadError = 'Unable to load online leaderboard data.';
     console.error('Failed loading Firestore data, falling back to localStorage', e);
