@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Color Picking Guessing Game</title>
+  <title>Historical Analysis</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -97,8 +97,17 @@
     #menu-items { display:none; list-style:none; padding:5px; margin:0; background:#fff; border:1px solid #ccc; }
     #menu.expanded #menu-items { display:block; }
     #menu-items li { margin:5px 0; }
-    /* hide analysis on home page */
-    #analysis-container { display:none; }
+    /* hide game interface on analysis page */
+    #options-row,
+    #intuition-inputs,
+    #intuition-submit,
+    #trial-button,
+    button[onclick="exportCSV()"],
+    button[onclick="resetPage()"],
+    #about-button,
+    #result,
+    #live-container,
+    #canvas { display:none; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
