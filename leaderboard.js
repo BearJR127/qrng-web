@@ -40,20 +40,53 @@ export async function initLeaderboard(root){
   const stats = {};
   records.forEach(e => {
     const u = (e.username || '').trim();
-    if(!u) return;
-    if(!stats[u]) stats[u] = {matches:0,trials:0};
-    if(e.match) stats[u].matches++;
-    stats[u].trials++;
+    const m = (e.mode || '').trim();
+    if(!u || !m) return;
+    const key = `${u}|${m}`;
+    if(!stats[key]) stats[key] = {user:u, mode:m, matches:0, trials:0};
+    if(e.match) stats[key].matches++;
+    stats[key].trials++;
   });
-  const entries = Object.entries(stats).map(([user,s]) => ({user, rate:s.trials ? s.matches/s.trials : 0, trials:s.trials}));
-  entries.sort((a,b)=> b.rate - a.rate || b.trials - a.trials);
-  const top = entries.slice(0,50);
-  root.innerHTML = '<h1>User Leaderboard</h1>';
-  if(top.length){
-    root.innerHTML += '<ol>' + top.map(e=>`<li>${e.user} - ${(e.rate*100).toFixed(1)}% (${e.trials})</li>`).join('') + '</ol>';
-  }else{
-    root.innerHTML += `<p>${loadError || 'No leaderboard data available.'}</p>`;
+  const entries = Object.values(stats).map(s => ({
+    user:s.user,
+    mode:s.mode,
+    rate:s.trials ? s.matches/s.trials : 0,
+    trials:s.trials
+  }));
+  let sortKey = 'rate';
+  let sortDir = 'desc';
+  const modeFilter = document.getElementById('mode-filter');
+  const tableBody = document.querySelector('#leaderboard-table tbody');
+  const headers = document.querySelectorAll('#leaderboard-table th');
+
+  function render(){
+    let data = entries.slice();
+    const filter = modeFilter.value;
+    if(filter) data = data.filter(e=>e.mode===filter);
+    data.sort((a,b)=>{
+      if(sortKey==='user') return sortDir==='asc'? a.user.localeCompare(b.user) : b.user.localeCompare(a.user);
+      if(sortKey==='mode') return sortDir==='asc'? a.mode.localeCompare(b.mode) : b.mode.localeCompare(a.mode);
+      if(sortKey==='trials') return sortDir==='asc'? a.trials - b.trials : b.trials - a.trials;
+      return sortDir==='asc'? a.rate - b.rate : b.rate - a.rate;
+    });
+    tableBody.innerHTML = data.map(e=>`<tr><td>${e.user}</td><td>${e.mode}</td><td>${(e.rate*100).toFixed(1)}</td><td>${e.trials}</td></tr>`).join('');
+    if(!data.length){
+      tableBody.innerHTML = `<tr><td colspan="4">${loadError || 'No leaderboard data available.'}</td></tr>`;
+    }
   }
+
+  headers.forEach(h=>h.addEventListener('click',()=>{
+    const key = h.dataset.sort;
+    if(sortKey===key){
+      sortDir = sortDir==='asc' ? 'desc' : 'asc';
+    }else{
+      sortKey = key;
+      sortDir = key==='user' || key==='mode' ? 'asc' : 'desc';
+    }
+    render();
+  }));
+  modeFilter.addEventListener('change',render);
+  render();
 }
 
 const container = document.getElementById('leaderboard-root');
