@@ -1,5 +1,6 @@
 export async function initLeaderboard(root){
   let records = [];
+  let loadError = '';
   try{
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js');
     const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
@@ -18,12 +19,15 @@ export async function initLeaderboard(root){
     const snap = await getDocs(collection(db,'qrng_trials'));
     records = snap.docs.map(d=>d.data());
   }catch(e){
+    loadError = 'Unable to load online leaderboard data.';
     console.error('Failed loading Firestore data, falling back to localStorage', e);
     try{
       records = JSON.parse(localStorage.getItem('qrng_trials') || '[]');
+      if(!records.length) loadError += ' No local data found.';
     }catch(err){
       console.error('Failed loading local data for leaderboard', err);
       records = [];
+      loadError += ' Failed to load local data.';
     }
   }
   const stats = {};
@@ -37,8 +41,12 @@ export async function initLeaderboard(root){
   const entries = Object.entries(stats).map(([user,s]) => ({user, rate:s.trials ? s.matches/s.trials : 0, trials:s.trials}));
   entries.sort((a,b)=> b.rate - a.rate || b.trials - a.trials);
   const top = entries.slice(0,50);
-  root.innerHTML = '<h1>User Leaderboard</h1>'+
-    '<ol>' + top.map(e=>`<li>${e.user} - ${(e.rate*100).toFixed(1)}% (${e.trials})</li>`).join('') + '</ol>';
+  root.innerHTML = '<h1>User Leaderboard</h1>';
+  if(top.length){
+    root.innerHTML += '<ol>' + top.map(e=>`<li>${e.user} - ${(e.rate*100).toFixed(1)}% (${e.trials})</li>`).join('') + '</ol>';
+  }else{
+    root.innerHTML += `<p>${loadError || 'No leaderboard data available.'}</p>`;
+  }
 }
 
 const container = document.getElementById('leaderboard-root');
