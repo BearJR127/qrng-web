@@ -641,6 +641,9 @@ async function runGameLogic(){
       `Your guess: <b>${guess}</b><br>`+
       `Actual: <b>${actual}</b><br>`+
       `<span class='${match?'match':'no-match'}'>${match?'✔ Match!':'✘ No match'}</span>`;
+    if(match && (mode==='guesser' || mode==='blackwhite') && navigator.vibrate){
+      navigator.vibrate(200);
+    }
     const record={timestamp:submitTimestamp,rngTimestamp,mode,rng,userSymbol:guess,actualSymbol:actual,match,username};
     const rngHash=await computeHash({timestamp:rngTimestamp.toISOString(),mode,rng,actualSymbol:actual});
     record.rngHash=rngHash;
