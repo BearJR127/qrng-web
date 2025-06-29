@@ -441,16 +441,20 @@ async function runGameLogic(){
   }
   window.submitIntuitionChoice = submitIntuitionChoice;
 
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-      video.addEventListener('playing', () => {
-        if(document.getElementById('mode').value==='guesser') {
-          ensureNextRng();
-        }
-      }, { once: true });
-    })
-    .catch(err => { document.getElementById('result').innerText = 'Webcam access denied.'; });
+  const rngSelect=document.getElementById('rng');
+  const liveContainer=document.getElementById('live-container');
+  if(rngSelect && rngSelect.value==='camera' && liveContainer && liveContainer.offsetParent!==null && navigator.mediaDevices?.getUserMedia){
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+        video.addEventListener('playing', () => {
+          if(document.getElementById('mode').value==='guesser') {
+            ensureNextRng();
+          }
+        }, { once: true });
+      })
+      .catch(err => { document.getElementById('result').innerText = 'Webcam access denied.'; });
+  }
 
   function extractRawBits(data,w,h){
     const bits=[];
