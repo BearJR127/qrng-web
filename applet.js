@@ -97,6 +97,7 @@ export function initGame(container){
     <p><strong>Focus mode</strong> continuously picks colors. Select a RNG then pick a color you think is going to be the highest match at that give time. After clicking 'Start Trial' the Q/RNG will run - change your selection as it goes to try your luck. When you're done 'Stop Trial' to see how you did, and if you'd like even export your results as a CSV.</p>
     <p><strong>Guesser mode</strong> is as it sounds, the Q/RNG has picked a color - can you guess which one? Select a color and click 'Start Trial' to guess. How's your guessing game?</p>
     <p><strong>Intuition mode</strong> has you select 5 different color picks before the Q/RNG picks its colors. It's like guesser mode but in reverse. How good are you at guessing which colors will be selected?</p>
+    <p><strong>Black white mode</strong> is a two color guessing game where you pick which color, black or white, will be chosen next. Link single trial intuition with 50/50 odds, how well can you do?</p>
     <button id="close-about">Close</button>
   </div>`;
 
