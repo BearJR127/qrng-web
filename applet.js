@@ -58,6 +58,7 @@ export function initGame(container){
   <button onclick="exportCSV()">Export CSV</button>
   <button onclick="resetPage()">Reset</button>
   <button id="about-button">About</button>
+  <button id="relax-button">Relax</button>
   <div id="result"></div>
   <div id="live-container">
     <div id="dashboard-stats"></div>
@@ -99,6 +100,13 @@ export function initGame(container){
     <p><strong>Intuition mode</strong> has you select 5 different color picks before the Q/RNG picks its colors. It's like guesser mode but in reverse. How good are you at guessing which colors will be selected?</p>
     <p><strong>Black white mode</strong> is a two color guessing game where you pick which color, black or white, will be chosen next. Like a single trial intuition with 50/50 odds, how well can you do?</p>
     <button id="close-about">Close</button>
+  </div>
+  <div id="relax-modal">
+    <div id="relax-circle"></div>
+    <div id="relax-countdown">60</div>
+    <button id="relax-music">Music</button>
+    <button id="close-relax">Close</button>
+    <audio id="relax-audio" src="relax.mp3" loop></audio>
   </div>`;
 
   runGameLogic();
@@ -760,5 +768,45 @@ async function runGameLogic(){
   });
   document.getElementById('close-about').addEventListener('click',()=>{
     document.getElementById('about-modal').style.display='none';
+  });
+
+  const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
+  let colorIndex=0,colorInterval,countdownInterval;
+
+  function startRelax(){
+    const circle=document.getElementById('relax-circle');
+    circle.style.animation='grow-shrink 12s linear 5 forwards';
+    circle.style.backgroundColor=pastelColors[0];
+    colorIndex=0;
+    colorInterval=setInterval(()=>{
+      colorIndex++;
+      circle.style.backgroundColor=pastelColors[colorIndex%pastelColors.length];
+    },2000);
+    let remaining=60;
+    document.getElementById('relax-countdown').textContent=remaining;
+    countdownInterval=setInterval(()=>{
+      remaining--; 
+      document.getElementById('relax-countdown').textContent=remaining;
+      if(remaining<=0) closeRelax();
+    },1000);
+  }
+
+  function closeRelax(){
+    document.getElementById('relax-modal').style.display='none';
+    clearInterval(colorInterval);
+    clearInterval(countdownInterval);
+    const audio=document.getElementById('relax-audio');
+    audio.pause();
+    audio.currentTime=0;
+  }
+
+  document.getElementById('relax-button').addEventListener('click',()=>{
+    document.getElementById('relax-modal').style.display='block';
+    startRelax();
+  });
+  document.getElementById('close-relax').addEventListener('click',closeRelax);
+  document.getElementById('relax-music').addEventListener('click',()=>{
+    const audio=document.getElementById('relax-audio');
+    if(audio.paused){audio.play();}else{audio.pause();}
   });
 }
