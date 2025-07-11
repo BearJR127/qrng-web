@@ -23,6 +23,12 @@
   <script>
     (async function(){
       const resp = await fetch('ColorGuessApplet.jar.base64');
+      if (!resp.ok) {
+        const msg = `Failed to load applet archive: ${resp.status} ${resp.statusText}`;
+        alert(msg);
+        console.error(msg);
+        return;
+      }
       const b64 = (await resp.text()).trim();
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], {type: 'application/java-archive'}));
