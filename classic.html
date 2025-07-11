@@ -22,7 +22,15 @@
   </div>
   <script>
     (async function(){
-      const resp = await fetch('ColorGuessApplet.jar.base64');
+      let resp;
+      try {
+        resp = await fetch('ColorGuessApplet.jar.base64');
+      } catch (err) {
+        const msg = `Error fetching applet archive: ${err}`;
+        alert(msg);
+        console.error(msg);
+        return;
+      }
       if (!resp.ok) {
         const msg = `Failed to load applet archive: ${resp.status} ${resp.statusText}`;
         alert(msg);
