@@ -774,12 +774,16 @@ async function runGameLogic(){
 
   const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
   let colorIndex=0,colorInterval,countdownInterval,cycleCount=0;
+  let relaxMusicPlaying=localStorage.getItem('relax_music_playing')==='1';
 
   function startRelax(){
     cycleCount=1;
     document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
     const audio=document.getElementById('relax-audio');
     audio.loop=true;
+    if(relaxMusicPlaying){
+      audio.play().catch(()=>{});
+    }
     startRelaxCycle();
   }
 
@@ -846,6 +850,13 @@ async function runGameLogic(){
   document.getElementById('next-cycle').addEventListener('click',nextCycle);
   document.getElementById('relax-music').addEventListener('click',()=>{
     const audio=document.getElementById('relax-audio');
-    if(audio.paused){audio.play();}else{audio.pause();}
+    if(audio.paused){
+      audio.play();
+      relaxMusicPlaying=true;
+    }else{
+      audio.pause();
+      relaxMusicPlaying=false;
+    }
+    localStorage.setItem('relax_music_playing',relaxMusicPlaying?'1':'0');
   });
 }
