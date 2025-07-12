@@ -79,7 +79,8 @@
     <div id="relax-cycle">0/10</div>
     <div id="relax-circle"></div>
     <div id="relax-countdown">60</div>
-    <button id="relax-music">Music</button>
+    <button id="relax-music">Mute Off</button>
+    <button id="relax-sound">Sound</button>
   <button id="next-cycle" disabled>Next</button>
   <audio id="relax-audio" src="relax.mp3" loop></audio>
   <video id="video" width="320" height="240" autoplay muted style="display:none"></video>
@@ -220,16 +221,24 @@
 
     const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
     let colorIndex=0, colorInterval, countdownInterval, cycleCount=0;
+    const audioFiles=['relax.mp3','relax1.mp3','relax2.mp3'];
+    let currentAudioIndex=parseInt(localStorage.getItem('relax_music_index')||'0');
     let relaxMusicPlaying = localStorage.getItem('relax_music_playing') === '1';
+
+    function updateMuteButton(){
+      document.getElementById('relax-music').textContent = relaxMusicPlaying ? 'Mute Off' : 'Mute On';
+    }
 
     function startRelax(){
       cycleCount = 1;
       document.getElementById('relax-cycle').textContent = `${cycleCount}/10`;
       const audio = document.getElementById('relax-audio');
       audio.loop = true;
+      audio.src = audioFiles[currentAudioIndex];
       if(relaxMusicPlaying){
         audio.play().catch(()=>{});
       }
+      updateMuteButton();
       startRelaxCycle();
     }
 
@@ -288,7 +297,19 @@
         relaxMusicPlaying=false;
       }
       localStorage.setItem('relax_music_playing',relaxMusicPlaying?'1':'0');
+      updateMuteButton();
     });
+
+    document.getElementById('relax-sound').addEventListener('click',()=>{
+      const audio=document.getElementById('relax-audio');
+      currentAudioIndex=(currentAudioIndex+1)%audioFiles.length;
+      localStorage.setItem('relax_music_index',currentAudioIndex);
+      audio.src=audioFiles[currentAudioIndex];
+      if(relaxMusicPlaying){
+        audio.play().catch(()=>{});
+      }
+    });
+    updateMuteButton();
     checkCamera().finally(startRelax);
   </script>
 </body>
