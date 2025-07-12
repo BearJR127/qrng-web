@@ -101,6 +101,7 @@
     const colors = ['Red','Blue','Green','Yellow'];
     let trial = 0;
     let audioCtx = null;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -176,9 +177,15 @@
     }
 
     async function checkCamera(){
+      if(!isSafari){
+        useCamera=false;
+        stopCamera();
+        return null;
+      }
       const cam=await startCamera();
       useCamera=!!cam;
       if(!useCamera) stopCamera();
+      return cam;
     }
 
     function playTone(match){
