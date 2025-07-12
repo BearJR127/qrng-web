@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relax Guesser</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f7f7 radial-gradient(#ffffff, #e0e0e0);
+      color: #111;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      color: #fff;
+      background: linear-gradient(45deg, #0066ff, #00ccff);
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    #relax-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+      text-align: center;
+    }
+    #relax-circle {
+      width: 200px;
+      height: 200px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: #f8c8dc;
+      animation: grow-shrink 12s linear 5 forwards;
+      transition: background-color 2s linear;
+    }
+    @keyframes grow-shrink {
+      0% { transform: scale(0); }
+      50% { transform: scale(1); }
+      100% { transform: scale(0); }
+    }
+    .highlight { background: #28a745; }
+    #color-boxes {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .color-box {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      font-size: 18px;
+    }
+    .red { background: red; }
+    .blue { background: blue; }
+    .green { background: green; }
+    .yellow { background: yellow; color: #000; }
+    #history { list-style: none; padding: 0; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <button id="relax-button">Relax</button>
+  <div id="relax-modal">
+    <div id="relax-cycle">0/10</div>
+    <div id="relax-circle"></div>
+    <div id="relax-countdown">60</div>
+    <button id="relax-music">Music</button>
+    <button id="next-cycle" disabled>Next</button>
+    <button id="close-relax">Close</button>
+    <audio id="relax-audio" src="relax.mp3" loop></audio>
+  </div>
+
+  <h2 id="status">Trial 1 of 24</h2>
+  <div id="color-boxes">
+    <div class="color-box red" data-color="Red">Red</div>
+    <div class="color-box blue" data-color="Blue">Blue</div>
+    <div class="color-box green" data-color="Green">Green</div>
+    <div class="color-box yellow" data-color="Yellow">Yellow</div>
+  </div>
+  <ol id="history"></ol>
+
+  <script>
+    const TOTAL_TRIALS = 24;
+    const colors = ['Red','Blue','Green','Yellow'];
+    let trial = 0;
+    let audioCtx = null;
+
+    function playTone(match){
+      try{
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = match ? 880 : 440;
+        osc.type = 'sine';
+        gain.gain.value = 0.5;
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      }catch(e){
+        console.error('tone error', e);
+      }
+    }
+
+    function handleGuess(e){
+      if(trial >= TOTAL_TRIALS) return;
+      const guess = e.currentTarget.getAttribute('data-color');
+      const actual = colors[Math.floor(Math.random()*colors.length)];
+      const match = guess === actual;
+      const li = document.createElement('li');
+      li.textContent = `Trial ${trial+1}: guessed ${guess}, actual ${actual} - ${match? 'Match' : 'No match'}`;
+      document.getElementById('history').prepend(li);
+      playTone(match);
+      trial++;
+      if(trial >= TOTAL_TRIALS){
+        document.getElementById('status').textContent = 'Finished!';
+        document.querySelectorAll('.color-box').forEach(b=>b.removeEventListener('click', handleGuess));
+      } else {
+        document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
+      }
+    }
+
+    document.querySelectorAll('.color-box').forEach(b=>b.addEventListener('click', handleGuess));
+
+    const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
+    let colorIndex=0, colorInterval, countdownInterval, cycleCount=0;
+    let relaxMusicPlaying = localStorage.getItem('relax_music_playing') === '1';
+
+    function startRelax(){
+      cycleCount = 1;
+      document.getElementById('relax-cycle').textContent = `${cycleCount}/10`;
+      const audio = document.getElementById('relax-audio');
+      audio.loop = true;
+      if(relaxMusicPlaying){
+        audio.play().catch(()=>{});
+      }
+      startRelaxCycle();
+    }
+
+    function startRelaxCycle(){
+      const audio=document.getElementById('relax-audio');
+      audio.loop=true;
+      const nextBtn=document.getElementById('next-cycle');
+      nextBtn.disabled=true;
+      nextBtn.classList.remove('highlight');
+      const circle=document.getElementById('relax-circle');
+      circle.style.animation='none';
+      void circle.offsetWidth;
+      circle.style.animation='grow-shrink 12s linear 5 forwards';
+      circle.style.backgroundColor=pastelColors[0];
+      colorIndex=0;
+      colorInterval=setInterval(()=>{
+        colorIndex++;
+        circle.style.backgroundColor=pastelColors[colorIndex%pastelColors.length];
+      },2000);
+      let remaining=60;
+      document.getElementById('relax-countdown').textContent=remaining;
+      countdownInterval=setInterval(()=>{
+        remaining--;
+        document.getElementById('relax-countdown').textContent=remaining;
+        if(remaining<=0) finishRelaxCycle();
+      },1000);
+    }
+
+    function finishRelaxCycle(){
+      clearInterval(colorInterval);
+      clearInterval(countdownInterval);
+      const nextBtn=document.getElementById('next-cycle');
+      if(cycleCount<10){
+        nextBtn.disabled=false;
+        nextBtn.classList.add('highlight');
+      }else{
+        nextBtn.disabled=true;
+      }
+    }
+
+    function nextCycle(){
+      if(cycleCount>=10) return;
+      cycleCount++;
+      document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+      startRelaxCycle();
+    }
+
+    function closeRelax(){
+      document.getElementById('relax-modal').style.display='none';
+      clearInterval(colorInterval);
+      clearInterval(countdownInterval);
+      document.getElementById('next-cycle').disabled=true;
+      document.getElementById('next-cycle').classList.remove('highlight');
+      const audio=document.getElementById('relax-audio');
+      audio.pause();
+      audio.currentTime=0;
+    }
+
+    document.getElementById('relax-button').addEventListener('click',()=>{
+      document.getElementById('relax-modal').style.display='block';
+      startRelax();
+    });
+    document.getElementById('close-relax').addEventListener('click',closeRelax);
+    document.getElementById('next-cycle').addEventListener('click',nextCycle);
+    document.getElementById('relax-music').addEventListener('click',()=>{
+      const audio=document.getElementById('relax-audio');
+      if(audio.paused){
+        audio.play();
+        relaxMusicPlaying=true;
+      }else{
+        audio.pause();
+        relaxMusicPlaying=false;
+      }
+      localStorage.setItem('relax_music_playing',relaxMusicPlaying?'1':'0');
+    });
+  </script>
+</body>
+</html>
