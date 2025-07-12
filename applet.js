@@ -786,6 +786,8 @@ async function runGameLogic(){
     nextBtn.disabled=true;
     nextBtn.classList.remove('highlight');
     const circle=document.getElementById('relax-circle');
+    circle.style.animation='none';
+    void circle.offsetWidth;
     circle.style.animation='grow-shrink 12s linear 5 forwards';
     circle.style.backgroundColor=pastelColors[0];
     colorIndex=0;
