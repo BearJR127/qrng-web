@@ -108,7 +108,7 @@ export function initGame(container){
     <button id="relax-music">Music</button>
     <button id="next-cycle" disabled>Next</button>
     <button id="close-relax">Close</button>
-    <audio id="relax-audio" src="relax.mp3" loop></audio>
+    <audio id="relax-audio" src="thetamax1.mp3" loop></audio>
   </div>`;
 
   runGameLogic();
