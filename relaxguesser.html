@@ -77,6 +77,7 @@
     #menu-items { display: none; list-style: none; padding: 5px; margin: 0; background: #fff; border: 1px solid #ccc; }
     #menu.expanded #menu-items { display: block; }
     #menu-items li { margin: 5px 0; }
+    #mode-row { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -107,6 +108,15 @@
     <div class="color-box blue" data-color="Blue">Blue</div>
     <div class="color-box green" data-color="Green">Green</div>
     <div class="color-box yellow" data-color="Yellow">Yellow</div>
+  </div>
+  <div id="mode-row">
+    <label>Select Mode:</label>
+    <select id="mode">
+      <option value="focus">Focus</option>
+      <option value="guesser">Guesser</option>
+      <option value="intuition">Intuition</option>
+      <option value="blackwhite">BlackWhite</option>
+    </select>
   </div>
   <ol id="history"></ol>
 

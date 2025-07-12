@@ -19,6 +19,15 @@ export function initGame(container){
   </div>
   <div id="options-row">
     <div>
+      <label>Select Mode:</label>
+      <select id="mode">
+        <option value="focus">Focus</option>
+        <option value="guesser">Guesser</option>
+        <option value="intuition">Intuition</option>
+        <option value="blackwhite">BlackWhite</option>
+      </select>
+    </div>
+    <div>
       <label>RNG:</label>
       <select id="rng">
         <option value="camera" selected>Camera</option>
@@ -30,13 +39,6 @@ export function initGame(container){
       <input type="hidden" id="single-choice" value="Red" />
       <div class="color-slider" data-input="single-choice"></div>
     </div>
-  </div>
-  <div id="mode-row">
-    <label>Select Mode:</label>
-    <select id="mode">
-      <option value="intuition" selected>Intuition</option>
-      <option value="guesser">Guesser</option>
-    </select>
   </div>
   <div id="intuition-inputs" style="display:none;">
     <label>Select 5 Colors:</label><br>
