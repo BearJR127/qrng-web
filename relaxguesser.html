@@ -81,7 +81,6 @@
     <div id="relax-countdown">60</div>
     <button id="relax-music">Music</button>
     <button id="next-cycle" disabled>Next</button>
-    <button id="close-relax">Close</button>
     <audio id="relax-audio" src="relax.mp3" loop></audio>
   </div>
 
@@ -196,18 +195,6 @@
       startRelaxCycle();
     }
 
-    function closeRelax(){
-      document.getElementById('relax-modal').style.display='none';
-      clearInterval(colorInterval);
-      clearInterval(countdownInterval);
-      document.getElementById('next-cycle').disabled=true;
-      document.getElementById('next-cycle').classList.remove('highlight');
-      const audio=document.getElementById('relax-audio');
-      audio.pause();
-      audio.currentTime=0;
-    }
-
-    document.getElementById('close-relax').addEventListener('click',closeRelax);
     document.getElementById('next-cycle').addEventListener('click',nextCycle);
     document.getElementById('relax-music').addEventListener('click',()=>{
       const audio=document.getElementById('relax-audio');
