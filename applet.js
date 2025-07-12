@@ -778,10 +778,18 @@ async function runGameLogic(){
   function startRelax(){
     cycleCount=1;
     document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+    const audio=document.getElementById('relax-audio');
+    audio.loop=true;
+    audio.play();
     startRelaxCycle();
   }
 
   function startRelaxCycle(){
+    const audio=document.getElementById('relax-audio');
+    audio.loop=true;
+    if(audio.paused){
+      audio.play();
+    }
     const nextBtn=document.getElementById('next-cycle');
     nextBtn.disabled=true;
     nextBtn.classList.remove('highlight');
