@@ -100,6 +100,7 @@
     const TOTAL_TRIALS = 24;
     const colors = ['Red','Blue','Green','Yellow'];
     let trial = 0;
+    let matchCount = 0;
     let audioCtx = null;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const video = document.getElementById('video');
@@ -213,11 +214,14 @@
       const match = guess === actual;
       const li = document.createElement('li');
       li.textContent = `Trial ${trial+1}: guessed ${guess}, actual ${actual} - ${match? 'Match' : 'No match'}`;
+      if(match) matchCount++;
       document.getElementById('history').prepend(li);
       playTone(match);
       trial++;
       if(trial >= TOTAL_TRIALS){
-        document.getElementById('status').textContent = 'Finished!';
+        const matchRate = ((matchCount / TOTAL_TRIALS) * 100).toFixed(1);
+        document.getElementById('status').textContent =
+          `Finished! ${matchCount}/${TOTAL_TRIALS} matched (${matchRate}%)`;
         document.querySelectorAll('.color-box').forEach(b=>b.removeEventListener('click', handleGuess));
       } else {
         document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
