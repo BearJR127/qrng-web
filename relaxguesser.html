@@ -72,9 +72,23 @@
     .green { background: green; }
     .yellow { background: yellow; color: #000; }
     #history { list-style: none; padding: 0; margin-top: 20px; }
+    /* menu styles */
+    #menu { position: fixed; top: 10px; left: 10px; }
+    #menu-items { display: none; list-style: none; padding: 5px; margin: 0; background: #fff; border: 1px solid #ccc; }
+    #menu.expanded #menu-items { display: block; }
+    #menu-items li { margin: 5px 0; }
   </style>
 </head>
 <body>
+  <nav id="menu">
+    <button id="menu-toggle">Menu</button>
+    <ul id="menu-items">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="analysis.html">Analysis</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="relaxguesser.html">Relax Guesser</a></li>
+    </ul>
+  </nav>
   <div id="relax-modal">
     <div id="relax-cycle">0/10</div>
     <div id="relax-circle"></div>
@@ -322,6 +336,11 @@
     });
     updateMuteButton();
     checkCamera().finally(startRelax);
+  </script>
+  <script>
+    document.getElementById("menu-toggle").addEventListener("click", () => {
+      document.getElementById("menu").classList.toggle("expanded");
+    });
   </script>
 </body>
 </html>
