@@ -453,7 +453,7 @@ async function runGameLogic(){
 
   let cameraStream = null;
   async function startCamera(){
-    if(cameraStream || !navigator.mediaDevices?.getUserMedia) return cameraStream;
+    if(cameraStream || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return cameraStream;
     try{
       cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = cameraStream;
