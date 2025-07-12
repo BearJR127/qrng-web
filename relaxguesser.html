@@ -25,16 +25,12 @@
     }
     button:hover { opacity: 0.9; }
     #relax-modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      display: block;
+      margin: 0 auto 20px;
       background: #fff;
       padding: 20px;
       border: 1px solid #ccc;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      z-index: 1000;
       text-align: center;
     }
     #relax-circle {
@@ -79,7 +75,6 @@
   </style>
 </head>
 <body>
-  <button id="relax-button">Relax</button>
   <div id="relax-modal">
     <div id="relax-cycle">0/10</div>
     <div id="relax-circle"></div>
@@ -212,10 +207,6 @@
       audio.currentTime=0;
     }
 
-    document.getElementById('relax-button').addEventListener('click',()=>{
-      document.getElementById('relax-modal').style.display='block';
-      startRelax();
-    });
     document.getElementById('close-relax').addEventListener('click',closeRelax);
     document.getElementById('next-cycle').addEventListener('click',nextCycle);
     document.getElementById('relax-music').addEventListener('click',()=>{
@@ -229,6 +220,7 @@
       }
       localStorage.setItem('relax_music_playing',relaxMusicPlaying?'1':'0');
     });
+    startRelax();
   </script>
 </body>
 </html>
