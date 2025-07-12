@@ -102,9 +102,11 @@ export function initGame(container){
     <button id="close-about">Close</button>
   </div>
   <div id="relax-modal">
+    <div id="relax-cycle">0/10</div>
     <div id="relax-circle"></div>
     <div id="relax-countdown">60</div>
     <button id="relax-music">Music</button>
+    <button id="next-cycle" disabled>Next</button>
     <button id="close-relax">Close</button>
     <audio id="relax-audio" src="relax.mp3" loop></audio>
   </div>`;
@@ -771,9 +773,18 @@ async function runGameLogic(){
   });
 
   const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
-  let colorIndex=0,colorInterval,countdownInterval;
+  let colorIndex=0,colorInterval,countdownInterval,cycleCount=0;
 
   function startRelax(){
+    cycleCount=1;
+    document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+    startRelaxCycle();
+  }
+
+  function startRelaxCycle(){
+    const nextBtn=document.getElementById('next-cycle');
+    nextBtn.disabled=true;
+    nextBtn.classList.remove('highlight');
     const circle=document.getElementById('relax-circle');
     circle.style.animation='grow-shrink 12s linear 5 forwards';
     circle.style.backgroundColor=pastelColors[0];
@@ -785,16 +796,37 @@ async function runGameLogic(){
     let remaining=60;
     document.getElementById('relax-countdown').textContent=remaining;
     countdownInterval=setInterval(()=>{
-      remaining--; 
+      remaining--;
       document.getElementById('relax-countdown').textContent=remaining;
-      if(remaining<=0) closeRelax();
+      if(remaining<=0) finishRelaxCycle();
     },1000);
+  }
+
+  function finishRelaxCycle(){
+    clearInterval(colorInterval);
+    clearInterval(countdownInterval);
+    const nextBtn=document.getElementById('next-cycle');
+    if(cycleCount<10){
+      nextBtn.disabled=false;
+      nextBtn.classList.add('highlight');
+    }else{
+      nextBtn.disabled=true;
+    }
+  }
+
+  function nextCycle(){
+    if(cycleCount>=10) return;
+    cycleCount++;
+    document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+    startRelaxCycle();
   }
 
   function closeRelax(){
     document.getElementById('relax-modal').style.display='none';
     clearInterval(colorInterval);
     clearInterval(countdownInterval);
+    document.getElementById('next-cycle').disabled=true;
+    document.getElementById('next-cycle').classList.remove('highlight');
     const audio=document.getElementById('relax-audio');
     audio.pause();
     audio.currentTime=0;
@@ -805,6 +837,7 @@ async function runGameLogic(){
     startRelax();
   });
   document.getElementById('close-relax').addEventListener('click',closeRelax);
+  document.getElementById('next-cycle').addEventListener('click',nextCycle);
   document.getElementById('relax-music').addEventListener('click',()=>{
     const audio=document.getElementById('relax-audio');
     if(audio.paused){audio.play();}else{audio.pause();}
