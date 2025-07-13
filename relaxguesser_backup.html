@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relax Guesser</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f7f7 radial-gradient(#ffffff, #e0e0e0);
+      color: #111;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      color: #fff;
+      background: linear-gradient(45deg, #0066ff, #00ccff);
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    #relax-modal {
+      display: block;
+      margin: 0 auto 20px;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    #relax-circle {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: #f8c8dc;
+      animation: grow-shrink 12s linear 5 forwards;
+      transition: background-color 2s linear;
+    }
+    #focus-point {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      margin: -6px 0 0 -6px;
+      border-radius: 50%;
+      background: #555;
+      pointer-events: none;
+    }
+    @keyframes grow-shrink {
+      0% { transform: scale(0); }
+      50% { transform: scale(1); }
+      100% { transform: scale(0); }
+    }
+    .highlight { background: #28a745; }
+    #color-boxes {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .color-box {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      font-size: 18px;
+    }
+    .red { background: red; }
+    .blue { background: blue; }
+    .green { background: green; }
+    .yellow { background: yellow; color: #000; }
+    #history { list-style: none; padding: 0; margin-top: 20px; }
+    /* menu styles */
+    #menu { position: fixed; top: 10px; left: 10px; }
+    #menu-items { display: none; list-style: none; padding: 5px; margin: 0; background: #fff; border: 1px solid #ccc; }
+    #menu.expanded #menu-items { display: block; }
+    #menu-items li { margin: 5px 0; }
+    #mode-row { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <nav id="menu">
+    <button id="menu-toggle">Menu</button>
+    <ul id="menu-items">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="analysis.html">Analysis</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="relaxguesser.html">Relax Guesser</a></li>
+    </ul>
+  </nav>
+  <div id="relax-modal">
+    <div id="relax-cycle">0/10</div>
+    <div id="relax-circle"><div id="focus-point"></div></div>
+    <div id="relax-countdown">60</div>
+    <button id="relax-music">Mute Off</button>
+    <button id="relax-sound">Sound</button>
+  <button id="next-cycle" disabled>Next</button>
+  <audio id="relax-audio" src="relax.mp3" loop></audio>
+</div>
+
+  <h2 id="status">Trial 1 of 24</h2>
+  <div id="color-boxes">
+    <div class="color-box red" data-color="Red">Red</div>
+    <div class="color-box blue" data-color="Blue">Blue</div>
+    <div class="color-box green" data-color="Green">Green</div>
+    <div class="color-box yellow" data-color="Yellow">Yellow</div>
+  </div>
+  <div id="mode-row">
+    <label>Select Mode:</label>
+    <select id="mode">
+      <option value="intuition" selected>Intuition</option>
+      <option value="guesser">Guesser</option>
+    </select>
+    <button id="reset-trials">Reset</button>
+  </div>
+  <ol id="history"></ol>
+
+  <script>
+    const TOTAL_TRIALS = 24;
+    const colors = ['Red','Blue','Green','Yellow'];
+    let trial = 0;
+    let matchCount = 0;
+    let audioCtx = null;
+    // Camera-based RNG removed. Symbols are generated using software RNG only.
+
+    function getSymbolFromEvent(){
+      const arr=new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      return colors[arr[0]%colors.length];
+    }
+
+    function getSymbol(){
+      return getSymbolFromEvent();
+    }
+
+    function playTone(match){
+      try{
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = match ? 880 : 440;
+        osc.type = 'sine';
+        gain.gain.value = 0.5;
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      }catch(e){
+        console.error('tone error', e);
+      }
+    }
+
+    async function handleGuess(e){
+      if(trial >= TOTAL_TRIALS) return;
+      const guess = e.currentTarget.getAttribute('data-color');
+      const actual = getSymbol();
+      const match = guess === actual;
+      const li = document.createElement('li');
+      li.textContent = `Trial ${trial+1}: guessed ${guess}, actual ${actual} - ${match? 'Match' : 'No match'}`;
+      if(match) matchCount++;
+      document.getElementById('history').prepend(li);
+      playTone(match);
+      trial++;
+      if(trial >= TOTAL_TRIALS){
+        const matchRate = ((matchCount / TOTAL_TRIALS) * 100).toFixed(1);
+        let prefix;
+        if(matchCount <= 6){
+          prefix = 'You did great, try another Relax session and go again.';
+        }else if(matchCount <= 9){
+          prefix = "Excellent work! You're now in a Relaxed state, try again?";
+        }else if(matchCount <= 13){
+          prefix = 'Amazing! You\'re completely Relaxed.';
+        }else if(matchCount <= 16){
+          prefix = 'Deep Sleep Relaxation! Almost too Relaxed for comfort.';
+        }else if(matchCount <= 20){
+          prefix = 'Comatose Relaxation!';
+        }else{
+          prefix = "Welcome back to this dimension! You left our plane of existence for a moment, we're glad to have you back!";
+        }
+        document.getElementById('status').textContent =
+          `${prefix} ${matchCount}/${TOTAL_TRIALS} matched (${matchRate}%)`;
+        document.querySelectorAll('.color-box').forEach(b=>b.removeEventListener('click', handleGuess));
+      } else {
+        document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
+      }
+    }
+
+    document.querySelectorAll('.color-box').forEach(b=>b.addEventListener('click', handleGuess));
+
+    function resetTrials(){
+      trial = 0;
+      matchCount = 0;
+      document.getElementById('history').innerHTML = '';
+      document.getElementById('status').textContent = `Trial 1 of ${TOTAL_TRIALS}`;
+      document.querySelectorAll('.color-box').forEach(b=>{
+        b.removeEventListener('click', handleGuess);
+        b.addEventListener('click', handleGuess);
+      });
+    }
+
+    document.getElementById('reset-trials').addEventListener('click', resetTrials);
+
+    const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
+    let colorIndex=0, colorInterval, countdownInterval, cycleCount=0;
+    const audioFiles=['relax.mp3','relax1.mp3','relax2.mp3'];
+    let currentAudioIndex=parseInt(localStorage.getItem('relax_music_index')||'0');
+    let relaxMusicPlaying = localStorage.getItem('relax_music_playing') === '1';
+
+    function updateMuteButton(){
+      document.getElementById('relax-music').textContent = relaxMusicPlaying ? 'Mute Off' : 'Mute On';
+    }
+
+    function startRelax(){
+      cycleCount = 1;
+      document.getElementById('relax-cycle').textContent = `${cycleCount}/10`;
+      const audio = document.getElementById('relax-audio');
+      audio.loop = true;
+      audio.src = audioFiles[currentAudioIndex];
+      if(relaxMusicPlaying){
+        audio.play().catch(()=>{});
+      }
+      updateMuteButton();
+      startRelaxCycle();
+    }
+
+    function startRelaxCycle(){
+      const audio=document.getElementById('relax-audio');
+      audio.loop=true;
+      const nextBtn=document.getElementById('next-cycle');
+      nextBtn.disabled=true;
+      nextBtn.classList.remove('highlight');
+      const circle=document.getElementById('relax-circle');
+      circle.style.animation='none';
+      void circle.offsetWidth;
+      circle.style.animation='grow-shrink 12s linear 5 forwards';
+      circle.style.backgroundColor=pastelColors[0];
+      colorIndex=0;
+      colorInterval=setInterval(()=>{
+        colorIndex++;
+        circle.style.backgroundColor=pastelColors[colorIndex%pastelColors.length];
+      },2000);
+      let remaining=60;
+      document.getElementById('relax-countdown').textContent=remaining;
+      countdownInterval=setInterval(()=>{
+        remaining--;
+        document.getElementById('relax-countdown').textContent=remaining;
+        if(remaining<=0) finishRelaxCycle();
+      },1000);
+    }
+
+    function finishRelaxCycle(){
+      clearInterval(colorInterval);
+      clearInterval(countdownInterval);
+      const nextBtn=document.getElementById('next-cycle');
+      if(cycleCount<10){
+        nextBtn.disabled=false;
+        nextBtn.classList.add('highlight');
+      }else{
+        nextBtn.disabled=true;
+      }
+    }
+
+    function nextCycle(){
+      if(cycleCount>=10) return;
+      cycleCount++;
+      document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+      startRelaxCycle();
+    }
+
+    document.getElementById('next-cycle').addEventListener('click',nextCycle);
+    document.getElementById('relax-music').addEventListener('click',()=>{
+      const audio=document.getElementById('relax-audio');
+      if(audio.paused){
+        audio.play();
+        relaxMusicPlaying=true;
+      }else{
+        audio.pause();
+        relaxMusicPlaying=false;
+      }
+      localStorage.setItem('relax_music_playing',relaxMusicPlaying?'1':'0');
+      updateMuteButton();
+    });
+
+    document.getElementById('relax-sound').addEventListener('click',()=>{
+      const audio=document.getElementById('relax-audio');
+      currentAudioIndex=(currentAudioIndex+1)%audioFiles.length;
+      localStorage.setItem('relax_music_index',currentAudioIndex);
+      audio.src=audioFiles[currentAudioIndex];
+      if(relaxMusicPlaying){
+        audio.play().catch(()=>{});
+      }
+    });
+    updateMuteButton();
+    startRelax();
+  </script>
+  <script>
+    document.getElementById("menu-toggle").addEventListener("click", () => {
+      document.getElementById("menu").classList.toggle("expanded");
+    });
+  </script>
+</body>
+</html>
