@@ -121,7 +121,6 @@
     <div id="relax-countdown">24</div>
     <button id="relax-music">Mute Off</button>
     <button id="relax-sound">Sound</button>
-  <button id="next-cycle" disabled>Next</button>
   <audio id="relax-audio" src="relax.mp3" loop></audio>
 </div>
 
@@ -222,10 +221,8 @@
       }
       if(guessesThisCycle >= MAX_GUESSES_PER_CYCLE || trial >= TOTAL_TRIALS){
         disableGuesses();
-        const nextBtn=document.getElementById('next-cycle');
-        if(cycleCount < TOTAL_CYCLES){
-          nextBtn.disabled=false;
-          nextBtn.classList.add('highlight');
+        if(cycleCount < TOTAL_CYCLES && trial < TOTAL_TRIALS){
+          setTimeout(nextCycle, 1000);
         }
       }
     }
@@ -283,8 +280,6 @@
       const audio=document.getElementById('relax-audio');
       audio.pause();
       audio.currentTime=0;
-      document.getElementById('next-cycle').disabled=true;
-      document.getElementById('next-cycle').classList.remove('highlight');
       cycleCount=0;
       startRelax();
     }
@@ -307,9 +302,6 @@
       disableGuesses();
       const audio=document.getElementById('relax-audio');
       audio.loop=true;
-      const nextBtn=document.getElementById('next-cycle');
-      nextBtn.disabled=true;
-      nextBtn.classList.remove('highlight');
       const circle=document.getElementById('relax-circle');
       circle.style.animation='none';
       void circle.offsetWidth;
@@ -332,9 +324,6 @@
     function finishRelaxCycle(){
       clearInterval(colorInterval);
       clearInterval(countdownInterval);
-      const nextBtn=document.getElementById('next-cycle');
-      nextBtn.disabled=true;
-      nextBtn.classList.remove('highlight');
       enableGuesses();
     }
 
@@ -345,7 +334,6 @@
       startRelaxCycle();
     }
 
-    document.getElementById('next-cycle').addEventListener('click',nextCycle);
     document.getElementById('relax-music').addEventListener('click',()=>{
       const audio=document.getElementById('relax-audio');
       if(audio.paused){
