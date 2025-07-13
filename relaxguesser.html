@@ -236,6 +236,7 @@
         b.addEventListener('click', handleGuess);
       });
       disableGuesses();
+      resetRelaxDashboard();
     }
 
     document.getElementById('reset-trials').addEventListener('click', resetTrials);
@@ -248,6 +249,18 @@
 
     function updateMuteButton(){
       document.getElementById('relax-music').textContent = relaxMusicPlaying ? 'Mute Off' : 'Mute On';
+    }
+
+    function resetRelaxDashboard(){
+      clearInterval(colorInterval);
+      clearInterval(countdownInterval);
+      const audio=document.getElementById('relax-audio');
+      audio.pause();
+      audio.currentTime=0;
+      document.getElementById('next-cycle').disabled=true;
+      document.getElementById('next-cycle').classList.remove('highlight');
+      cycleCount=0;
+      startRelax();
     }
 
    function startRelax(){
