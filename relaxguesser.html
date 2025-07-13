@@ -40,7 +40,7 @@
       margin: 20px auto;
       border-radius: 50%;
       background: #f8c8dc;
-      animation: grow-shrink 12s linear 5 forwards;
+      animation: grow-shrink 12s linear 2 forwards;
       transition: background-color 2s linear;
     }
     #focus-point {
@@ -79,6 +79,7 @@
       user-select: none;
       font-size: 18px;
     }
+    .color-box.disabled{opacity:0.6;pointer-events:none;}
     .red { background: red; }
     .blue { background: blue; }
     .green { background: green; }
@@ -103,9 +104,9 @@
     </ul>
   </nav>
   <div id="relax-modal">
-    <div id="relax-cycle">0/10</div>
+    <div id="relax-cycle">0/6</div>
     <div id="relax-circle"><div id="focus-point"></div></div>
-    <div id="relax-countdown">60</div>
+    <div id="relax-countdown">24</div>
     <button id="relax-music">Mute Off</button>
     <button id="relax-sound">Sound</button>
   <button id="next-cycle" disabled>Next</button>
@@ -131,10 +132,14 @@
 
   <script>
     const TOTAL_TRIALS = 24;
+    const TOTAL_CYCLES = 6;
+    const MAX_GUESSES_PER_CYCLE = 4;
     const colors = ['Red','Blue','Green','Yellow'];
     let trial = 0;
     let matchCount = 0;
     let audioCtx = null;
+    let guessEnabled = false;
+    let guessesThisCycle = 0;
     // Camera-based RNG removed. Symbols are generated using software RNG only.
 
     function getSymbolFromEvent(){
@@ -165,7 +170,7 @@
     }
 
     async function handleGuess(e){
-      if(trial >= TOTAL_TRIALS) return;
+      if(!guessEnabled || trial >= TOTAL_TRIALS) return;
       const guess = e.currentTarget.getAttribute('data-color');
       const actual = getSymbol();
       const match = guess === actual;
@@ -175,6 +180,7 @@
       document.getElementById('history').prepend(li);
       playTone(match);
       trial++;
+      guessesThisCycle++;
       if(trial >= TOTAL_TRIALS){
         const matchRate = ((matchCount / TOTAL_TRIALS) * 100).toFixed(1);
         let prefix;
@@ -197,9 +203,28 @@
       } else {
         document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
       }
+      if(guessesThisCycle >= MAX_GUESSES_PER_CYCLE || trial >= TOTAL_TRIALS){
+        disableGuesses();
+        const nextBtn=document.getElementById('next-cycle');
+        if(cycleCount < TOTAL_CYCLES){
+          nextBtn.disabled=false;
+          nextBtn.classList.add('highlight');
+        }
+      }
     }
 
     document.querySelectorAll('.color-box').forEach(b=>b.addEventListener('click', handleGuess));
+
+    function enableGuesses(){
+      guessEnabled=true;
+      guessesThisCycle=0;
+      document.querySelectorAll('.color-box').forEach(b=>b.classList.remove('disabled'));
+    }
+
+    function disableGuesses(){
+      guessEnabled=false;
+      document.querySelectorAll('.color-box').forEach(b=>b.classList.add('disabled'));
+    }
 
     function resetTrials(){
       trial = 0;
@@ -210,6 +235,7 @@
         b.removeEventListener('click', handleGuess);
         b.addEventListener('click', handleGuess);
       });
+      disableGuesses();
     }
 
     document.getElementById('reset-trials').addEventListener('click', resetTrials);
@@ -224,9 +250,9 @@
       document.getElementById('relax-music').textContent = relaxMusicPlaying ? 'Mute Off' : 'Mute On';
     }
 
-    function startRelax(){
+   function startRelax(){
       cycleCount = 1;
-      document.getElementById('relax-cycle').textContent = `${cycleCount}/10`;
+      document.getElementById('relax-cycle').textContent = `${cycleCount}/${TOTAL_CYCLES}`;
       const audio = document.getElementById('relax-audio');
       audio.loop = true;
       audio.src = audioFiles[currentAudioIndex];
@@ -234,10 +260,12 @@
         audio.play().catch(()=>{});
       }
       updateMuteButton();
+      disableGuesses();
       startRelaxCycle();
     }
 
-    function startRelaxCycle(){
+   function startRelaxCycle(){
+      disableGuesses();
       const audio=document.getElementById('relax-audio');
       audio.loop=true;
       const nextBtn=document.getElementById('next-cycle');
@@ -246,14 +274,14 @@
       const circle=document.getElementById('relax-circle');
       circle.style.animation='none';
       void circle.offsetWidth;
-      circle.style.animation='grow-shrink 12s linear 5 forwards';
+      circle.style.animation='grow-shrink 12s linear 2 forwards';
       circle.style.backgroundColor=pastelColors[0];
       colorIndex=0;
       colorInterval=setInterval(()=>{
         colorIndex++;
         circle.style.backgroundColor=pastelColors[colorIndex%pastelColors.length];
       },2000);
-      let remaining=60;
+      let remaining=24;
       document.getElementById('relax-countdown').textContent=remaining;
       countdownInterval=setInterval(()=>{
         remaining--;
@@ -266,18 +294,15 @@
       clearInterval(colorInterval);
       clearInterval(countdownInterval);
       const nextBtn=document.getElementById('next-cycle');
-      if(cycleCount<10){
-        nextBtn.disabled=false;
-        nextBtn.classList.add('highlight');
-      }else{
-        nextBtn.disabled=true;
-      }
+      nextBtn.disabled=true;
+      nextBtn.classList.remove('highlight');
+      enableGuesses();
     }
 
     function nextCycle(){
-      if(cycleCount>=10) return;
+      if(cycleCount>=TOTAL_CYCLES) return;
       cycleCount++;
-      document.getElementById('relax-cycle').textContent=`${cycleCount}/10`;
+      document.getElementById('relax-cycle').textContent=`${cycleCount}/${TOTAL_CYCLES}`;
       startRelaxCycle();
     }
 
