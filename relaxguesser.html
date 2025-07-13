@@ -176,8 +176,22 @@
       trial++;
       if(trial >= TOTAL_TRIALS){
         const matchRate = ((matchCount / TOTAL_TRIALS) * 100).toFixed(1);
+        let prefix;
+        if(matchCount <= 6){
+          prefix = 'You did great, try another Relax session and go again.';
+        }else if(matchCount <= 9){
+          prefix = "Excellent work! You're now in a Relaxed state, try again?";
+        }else if(matchCount <= 13){
+          prefix = 'Amazing! You\'re completely Relaxed.';
+        }else if(matchCount <= 16){
+          prefix = 'Deep Sleep Relaxation! Almost too Relaxed for comfort.';
+        }else if(matchCount <= 20){
+          prefix = 'Comatose Relaxation!';
+        }else{
+          prefix = "Welcome back to this dimension! You left our plane of existence for a moment, we're glad to have you back!";
+        }
         document.getElementById('status').textContent =
-          `Finished! ${matchCount}/${TOTAL_TRIALS} matched (${matchRate}%)`;
+          `${prefix} ${matchCount}/${TOTAL_TRIALS} matched (${matchRate}%)`;
         document.querySelectorAll('.color-box').forEach(b=>b.removeEventListener('click', handleGuess));
       } else {
         document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
