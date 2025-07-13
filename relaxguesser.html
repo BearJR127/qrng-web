@@ -91,6 +91,18 @@
     #menu.expanded #menu-items { display: block; }
     #menu-items li { margin: 5px 0; }
     #mode-row { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 10px; }
+    #reset-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
@@ -129,6 +141,11 @@
     <button id="reset-trials">Reset</button>
   </div>
   <ol id="history"></ol>
+  <div id="reset-modal">
+    <p>Are you sure you'd like to reset?</p>
+    <button id="reset-yes">Yes</button>
+    <button id="reset-no">No</button>
+  </div>
 
   <script>
     const TOTAL_TRIALS = 24;
@@ -239,7 +256,16 @@
       resetRelaxDashboard();
     }
 
-    document.getElementById('reset-trials').addEventListener('click', resetTrials);
+    document.getElementById('reset-trials').addEventListener('click',()=>{
+      document.getElementById('reset-modal').style.display='block';
+    });
+    document.getElementById('reset-yes').addEventListener('click',()=>{
+      document.getElementById('reset-modal').style.display='none';
+      resetTrials();
+    });
+    document.getElementById('reset-no').addEventListener('click',()=>{
+      document.getElementById('reset-modal').style.display='none';
+    });
 
     const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
     let colorIndex=0, colorInterval, countdownInterval, cycleCount=0;
