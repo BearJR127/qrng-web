@@ -125,6 +125,7 @@
       <option value="intuition" selected>Intuition</option>
       <option value="guesser">Guesser</option>
     </select>
+    <button id="reset-trials">Reset</button>
   </div>
   <ol id="history"></ol>
 
@@ -199,6 +200,19 @@
     }
 
     document.querySelectorAll('.color-box').forEach(b=>b.addEventListener('click', handleGuess));
+
+    function resetTrials(){
+      trial = 0;
+      matchCount = 0;
+      document.getElementById('history').innerHTML = '';
+      document.getElementById('status').textContent = `Trial 1 of ${TOTAL_TRIALS}`;
+      document.querySelectorAll('.color-box').forEach(b=>{
+        b.removeEventListener('click', handleGuess);
+        b.addEventListener('click', handleGuess);
+      });
+    }
+
+    document.getElementById('reset-trials').addEventListener('click', resetTrials);
 
     const pastelColors=['#ffd1dc','#e6e6fa','#d0f0c0','#fdfd96','#ffe5b4','#c1e1c1'];
     let colorIndex=0, colorInterval, countdownInterval, cycleCount=0;
