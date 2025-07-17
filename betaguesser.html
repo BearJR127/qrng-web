@@ -349,6 +349,7 @@
       piece = JSON.parse(JSON.stringify(shapes[Math.floor(Math.random()*shapes.length)]));
       pieceRow = 0;
       pieceCol = Math.floor(COLS/2) - Math.ceil(piece[0].length/2);
+      return valid(pieceRow, pieceCol, piece);
     }
 
     function move(dx,dy){
@@ -371,17 +372,25 @@
       clearLines();
       piecesDropped++;
       clearInterval(dropInterval);
+      if(board[0].some(v=>v)){
+        puzzleComplete();
+        return;
+      }
       if(piecesDropped>=PIECES_PER_ROUND){
         puzzleComplete();
       }else{
-        spawnPiece();
-        draw();
-        dropInterval=setInterval(drop,250);
+        if(spawnPiece()){
+          draw();
+          dropInterval=setInterval(drop,250);
+        }else{
+          puzzleComplete();
+        }
       }
     }
 
     function puzzleComplete(){
       document.getElementById('puzzle-status').textContent='Puzzle complete!';
+      clearInterval(dropInterval);
       enableGuesses();
     }
 
@@ -390,9 +399,12 @@
       createBoard();
       placeInitialShapes(INITIAL_SHAPES);
       piecesDropped=0;
-      spawnPiece();
-      draw();
-      dropInterval=setInterval(drop,250);
+      if(spawnPiece()){
+        draw();
+        dropInterval=setInterval(drop,250);
+      }else{
+        puzzleComplete();
+      }
     }
 
     document.addEventListener('keydown',e=>{
