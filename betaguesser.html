@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Beta Guesser</title>
   <style>
     body {
@@ -22,6 +22,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       cursor: pointer;
+      touch-action: manipulation;
     }
     button:hover { opacity: 0.9; }
     #puzzle-container {
@@ -42,6 +43,12 @@
       grid-template-rows: repeat(20,20px);
       background:#000;
       border:2px solid #333;
+    }
+    #puzzle-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
     }
     .cell {
       width: 20px;
@@ -95,6 +102,24 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       z-index: 1000;
     }
+    #flash-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2000;
+    }
+    @keyframes flash-effect {
+      from { opacity: 0.8; }
+      to { opacity: 0; }
+    }
+    #flash-overlay.flash {
+      animation: flash-effect 0.3s forwards;
+    }
   </style>
 </head>
 <body>
@@ -112,6 +137,11 @@
   <div id="puzzle-container">
     <div id="puzzle-status">Solve the puzzle</div>
     <div id="tetris"></div>
+    <div id="puzzle-controls">
+      <button id="puzzle-left">◀</button>
+      <button id="puzzle-rotate">⟳</button>
+      <button id="puzzle-right">▶</button>
+    </div>
     <button id="puzzle-music">Mute Off</button>
     <button id="puzzle-sound">Sound</button>
     <audio id="puzzle-audio" src="relax.mp3" loop></audio>
@@ -139,6 +169,7 @@
     <button id="reset-yes">Yes</button>
     <button id="reset-no">No</button>
   </div>
+  <div id="flash-overlay"></div>
 
   <script>
     const TOTAL_TRIALS = 24;
@@ -272,6 +303,12 @@
       [[1,1,0],[0,1,1]]  // Z
     ];
 
+    function flashScreen(){
+      const overlay=document.getElementById('flash-overlay');
+      overlay.classList.add('flash');
+      setTimeout(()=>overlay.classList.remove('flash'),300);
+    }
+
     function createBoard(){
       board = Array.from({length:ROWS},()=>Array(COLS).fill(0));
     }
@@ -326,13 +363,16 @@
     }
 
     function clearLines(){
+      let cleared=false;
       for(let r=ROWS-1;r>=0;r--){
         if(board[r].every(v=>v)){
           board.splice(r,1);
           board.unshift(Array(COLS).fill(0));
           r++; // recheck same row after shift
+          cleared=true;
         }
       }
+      if(cleared) flashScreen();
     }
 
     function boardIsEmpty(){
@@ -398,6 +438,7 @@
       piecesDropped++;
       clearInterval(dropInterval);
       if(board[0].some(v=>v)){
+        flashScreen();
         puzzleComplete();
         return;
       }
@@ -477,6 +518,18 @@
 
     tetrisDiv.addEventListener('pointerup',handlePointerEnd);
     tetrisDiv.addEventListener('pointercancel',()=>{dragging=false;});
+
+    document.getElementById('puzzle-left').addEventListener('click',()=>{
+      if(dropInterval) move(-1,0);
+    });
+    document.getElementById('puzzle-right').addEventListener('click',()=>{
+      if(dropInterval) move(1,0);
+    });
+    document.getElementById('puzzle-rotate').addEventListener('click',()=>{
+      if(!dropInterval) return;
+      const rot=rotate(piece);
+      if(valid(pieceRow,pieceCol,rot)){ piece=rot; draw(); }
+    });
 
     // audio controls
     const audioFiles=['relax.mp3','relax1.mp3','relax2.mp3'];
