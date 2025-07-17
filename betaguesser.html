@@ -297,6 +297,16 @@
       return true;
     }
 
+    function clearLines(){
+      for(let r=ROWS-1;r>=0;r--){
+        if(board[r].every(v=>v)){
+          board.splice(r,1);
+          board.unshift(Array(COLS).fill(0));
+          r++; // recheck same row after shift
+        }
+      }
+    }
+
     function draw(){
       const container=document.getElementById('tetris');
       container.innerHTML='';
@@ -342,6 +352,7 @@
           if(piece[r][c]) board[pieceRow+r][pieceCol+c]=1;
         }
       }
+      clearLines();
       piecesDropped++;
       clearInterval(dropInterval);
       if(piecesDropped>=PIECES_PER_ROUND){
@@ -377,6 +388,42 @@
         if(valid(pieceRow,pieceCol,rot)){ piece=rot; draw(); }
       }else if(e.key==='ArrowDown') drop();
     });
+
+    const tetrisDiv=document.getElementById('tetris');
+    let dragStartX=0, dragCurrentX=0, dragMoved=false, dragging=false;
+
+    tetrisDiv.addEventListener('pointerdown',e=>{
+      if(!dropInterval) return;
+      dragging=true;
+      dragStartX=dragCurrentX=e.clientX;
+      dragMoved=false;
+    });
+
+    tetrisDiv.addEventListener('pointermove',e=>{
+      if(!dragging) return;
+      let dx=e.clientX-dragCurrentX;
+      while(Math.abs(dx)>=20){
+        if(move(dx>0?1:-1,0)){
+          dragCurrentX+=dx>0?20:-20;
+        }else{
+          break;
+        }
+        dx=e.clientX-dragCurrentX;
+        dragMoved=true;
+      }
+    });
+
+    function handlePointerEnd(){
+      if(!dragging) return;
+      if(!dragMoved){
+        const rot=rotate(piece);
+        if(valid(pieceRow,pieceCol,rot)){ piece=rot; draw(); }
+      }
+      dragging=false;
+    }
+
+    tetrisDiv.addEventListener('pointerup',handlePointerEnd);
+    tetrisDiv.addEventListener('pointercancel',()=>{dragging=false;});
 
     // audio controls
     const audioFiles=['relax.mp3','relax1.mp3','relax2.mp3'];
