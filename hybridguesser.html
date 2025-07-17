@@ -140,6 +140,24 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       z-index: 1000;
     }
+    #flash-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2000;
+    }
+    @keyframes flash-effect {
+      from { opacity: 0.8; }
+      to { opacity: 0; }
+    }
+    #flash-overlay.flash {
+      animation: flash-effect 0.3s forwards;
+    }
   </style>
 </head>
 <body>
@@ -194,13 +212,14 @@
     </div>
     <ol id="history"></ol>
   </div>
-  <div id="reset-modal">
-    <p>Are you sure you'd like to reset?</p>
-    <button id="reset-yes">Yes</button>
-    <button id="reset-no">No</button>
-  </div>
+    <div id="reset-modal">
+      <p>Are you sure you'd like to reset?</p>
+      <button id="reset-yes">Yes</button>
+      <button id="reset-no">No</button>
+    </div>
+    <div id="flash-overlay"></div>
 
-  <script>
+    <script>
     const TOTAL_TRIALS = 24;
     const TRIALS_PER_ROUND = 4;
     const TOTAL_CYCLES = 6;
@@ -408,6 +427,12 @@
       [[1,1,0],[0,1,1]]
     ];
 
+    function flashScreen(){
+      const overlay=document.getElementById('flash-overlay');
+      overlay.classList.add('flash');
+      setTimeout(()=>overlay.classList.remove('flash'),300);
+    }
+
     function createBoard(){
       board = Array.from({length:ROWS},()=>Array(COLS).fill(0));
     }
@@ -462,13 +487,16 @@
     }
 
     function clearLines(){
+      let cleared=false;
       for(let r=ROWS-1;r>=0;r--){
         if(board[r].every(v=>v)){
           board.splice(r,1);
           board.unshift(Array(COLS).fill(0));
           r++;
+          cleared=true;
         }
       }
+      if(cleared) flashScreen();
     }
 
     function boardIsEmpty(){
@@ -534,6 +562,7 @@
       piecesDropped++;
       clearInterval(dropInterval);
       if(board[0].some(v=>v)){
+        flashScreen();
         puzzleComplete();
         return;
       }
