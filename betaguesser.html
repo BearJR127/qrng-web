@@ -59,7 +59,8 @@
     }
     .filled { background:#666; }
     .piece { background:#ff6666; }
-    #color-section { display:none; }
+    /* Color section should remain visible but locked until the puzzle is solved */
+    #color-section { display:block; }
     #color-boxes {
       display: flex;
       justify-content: center;
@@ -260,7 +261,8 @@
     function disableGuesses(){
       guessEnabled=false;
       document.querySelectorAll('.color-box').forEach(b=>b.classList.add('disabled'));
-      document.getElementById('color-section').style.display='none';
+      // keep the color section visible but inputs inactive
+      document.getElementById('color-section').style.display='block';
     }
 
     function resetTrials(){
@@ -571,6 +573,8 @@
       initAudio.play().catch(()=>{});
     }
 
+    // initially lock the color choices until the puzzle is solved
+    disableGuesses();
     startPuzzle();
   </script>
   <script>
