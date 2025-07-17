@@ -141,11 +141,13 @@
 
   <script>
     const TOTAL_TRIALS = 24;
+    const TRIALS_PER_ROUND = 4;
     const colors = ['Red','Blue','Green','Yellow'];
     let trial = 0;
     let matchCount = 0;
     let audioCtx = null;
     let guessEnabled = false;
+    let trialsThisRound = 0;
 
     function getSymbolFromEvent(){
       const arr=new Uint32Array(1);
@@ -185,6 +187,7 @@
       document.getElementById('history').prepend(li);
       playTone(match);
       trial++;
+      trialsThisRound++;
       if(trial >= TOTAL_TRIALS){
         const matchRate = ((matchCount / TOTAL_TRIALS) * 100).toFixed(1);
         let prefix;
@@ -203,6 +206,11 @@
         }
         document.getElementById('status').textContent = `${prefix} ${matchCount}/${TOTAL_TRIALS} matched (${matchRate}%)`;
         document.querySelectorAll('.color-box').forEach(b=>b.removeEventListener('click', handleGuess));
+      } else if(trialsThisRound >= TRIALS_PER_ROUND){
+        trialsThisRound = 0;
+        disableGuesses();
+        document.getElementById('status').textContent = 'Solve the puzzle to continue';
+        startPuzzle();
       } else {
         document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
       }
@@ -214,16 +222,19 @@
       guessEnabled=true;
       document.querySelectorAll('.color-box').forEach(b=>b.classList.remove('disabled'));
       document.getElementById('color-section').style.display='block';
+      document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
     }
 
     function disableGuesses(){
       guessEnabled=false;
       document.querySelectorAll('.color-box').forEach(b=>b.classList.add('disabled'));
+      document.getElementById('color-section').style.display='none';
     }
 
     function resetTrials(){
       trial = 0;
       matchCount = 0;
+      trialsThisRound = 0;
       document.getElementById('history').innerHTML = '';
       document.getElementById('status').textContent = `Trial 1 of ${TOTAL_TRIALS}`;
       document.querySelectorAll('.color-box').forEach(b=>{
