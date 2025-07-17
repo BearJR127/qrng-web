@@ -363,7 +363,6 @@
    function finishRelaxCycle(){
      clearInterval(colorInterval);
      clearInterval(countdownInterval);
-      document.getElementById('relax-modal').style.display='none';
       const audio=document.getElementById('relax-audio');
       audio.pause();
       audio.currentTime=0;
