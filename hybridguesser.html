@@ -43,6 +43,12 @@
       background:#000;
       border:2px solid #333;
     }
+    #puzzle-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
     .cell {
       width: 20px;
       height: 20px;
@@ -147,6 +153,11 @@
   <div id="puzzle-container">
     <div id="puzzle-status">Solve the puzzle</div>
     <div id="tetris"></div>
+    <div id="puzzle-controls">
+      <button id="puzzle-left">◀</button>
+      <button id="puzzle-rotate">⟳</button>
+      <button id="puzzle-right">▶</button>
+    </div>
     <button id="puzzle-music">Mute Off</button>
     <button id="puzzle-sound">Sound</button>
     <audio id="puzzle-audio" src="relax.mp3" loop></audio>
@@ -594,6 +605,18 @@
 
     tetrisDiv.addEventListener('pointerup',handlePointerEnd);
     tetrisDiv.addEventListener('pointercancel',()=>{dragging=false;});
+
+    document.getElementById('puzzle-left').addEventListener('click',()=>{
+      if(dropInterval) move(-1,0);
+    });
+    document.getElementById('puzzle-right').addEventListener('click',()=>{
+      if(dropInterval) move(1,0);
+    });
+    document.getElementById('puzzle-rotate').addEventListener('click',()=>{
+      if(!dropInterval) return;
+      const rot=rotate(piece);
+      if(valid(pieceRow,pieceCol,rot)){ piece=rot; draw(); }
+    });
 
     const puzzleAudioFiles=['relax.mp3','relax1.mp3','relax2.mp3'];
     let puzzleAudioIndex=parseInt(localStorage.getItem('puzzle_music_index')||'0');
