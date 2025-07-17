@@ -24,14 +24,17 @@
       cursor: pointer;
     }
     button:hover { opacity: 0.9; }
+    #game-panel {
+      display:block;
+      margin:0 auto 20px;
+      background:#fff;
+      padding:20px;
+      border:1px solid #ccc;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+      text-align:center;
+    }
     #puzzle-container {
-      display: block;
-      margin: 0 auto 20px;
-      background: #fff;
-      padding: 20px;
-      border: 1px solid #ccc;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      text-align: center;
+      display:block;
     }
     #tetris {
       width: 200px;
@@ -87,7 +90,7 @@
       50% { transform: scale(1); }
       100% { transform: scale(0); }
     }
-    #color-section { display:none; }
+    #color-section { display:block; }
     #color-boxes {
       display: flex;
       justify-content: center;
@@ -144,6 +147,7 @@
       <li><a href="hybridguesser.html">Hybrid Guesser</a></li>
     </ul>
   </nav>
+  <div id="game-panel">
   <div id="puzzle-container">
     <div id="puzzle-status">Solve the puzzle</div>
     <div id="tetris"></div>
@@ -159,6 +163,7 @@
     <button id="relax-sound">Sound</button>
     <audio id="relax-audio" src="relax.mp3" loop></audio>
   </div>
+  </div> <!-- end game-panel -->
   <div id="color-section">
     <h2 id="status">Trial 1 of 24</h2>
     <div id="color-boxes">
@@ -267,14 +272,12 @@
     function enableGuesses(){
       guessEnabled=true;
       document.querySelectorAll('.color-box').forEach(b=>b.classList.remove('disabled'));
-      document.getElementById('color-section').style.display='block';
       document.getElementById('status').textContent = `Trial ${trial+1} of ${TOTAL_TRIALS}`;
     }
 
     function disableGuesses(){
       guessEnabled=false;
       document.querySelectorAll('.color-box').forEach(b=>b.classList.add('disabled'));
-      document.getElementById('color-section').style.display='none';
     }
 
     function resetTrials(){
@@ -314,8 +317,11 @@
       document.getElementById('relax-music').textContent = relaxMusicPlaying ? 'Mute Off' : 'Mute On';
     }
 
-    function startRelaxCycle(){
+   function startRelaxCycle(){
       document.getElementById('puzzle-container').style.display='none';
+      const pAudio=document.getElementById('puzzle-audio');
+      pAudio.pause();
+      pAudio.currentTime=0;
       document.getElementById('relax-modal').style.display='block';
       const audio=document.getElementById('relax-audio');
       audio.loop=true;
@@ -343,10 +349,13 @@
       },1000);
     }
 
-    function finishRelaxCycle(){
-      clearInterval(colorInterval);
-      clearInterval(countdownInterval);
+   function finishRelaxCycle(){
+     clearInterval(colorInterval);
+     clearInterval(countdownInterval);
       document.getElementById('relax-modal').style.display='none';
+      const audio=document.getElementById('relax-audio');
+      audio.pause();
+      audio.currentTime=0;
       enableGuesses();
     }
 
@@ -535,8 +544,16 @@
       startRelaxCycle();
     }
 
-    function startPuzzle(){
+   function startPuzzle(){
+      document.getElementById('relax-modal').style.display='none';
+      const rAudio=document.getElementById('relax-audio');
+      rAudio.pause();
+      rAudio.currentTime=0;
       document.getElementById('puzzle-container').style.display='block';
+      const pAudio=document.getElementById('puzzle-audio');
+      if(puzzleMusicPlaying){
+        pAudio.play().catch(()=>{});
+      }
       document.getElementById('puzzle-status').textContent='Solve the puzzle';
       createBoard();
       placeInitialShapes(INITIAL_SHAPES);
@@ -633,6 +650,7 @@
     if(puzzleMusicPlaying){
       initAudio.play().catch(()=>{});
     }
+    disableGuesses();
 
     function startGameCycle(){
       if(cycleCount>=TOTAL_CYCLES) return;
